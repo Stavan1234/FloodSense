@@ -68,9 +68,20 @@ def pct(x: float) -> str:
 # ---------------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------------
-@st.cache_resource(show_spinner="Loading the AI model…")
-def load_system() -> IntegratedFloodSystem:
+def _engine_version() -> tuple:
+    """Changes whenever the engine code or model files change, so the cached model is rebuilt."""
+    import system_core
+    files = [Path(system_core.__file__), *sorted(MODEL_DIR.glob("*"))]
+    return tuple(f.stat().st_mtime_ns for f in files)
+
+
+@st.cache_resource(show_spinner="Loading the AI model…", max_entries=1)
+def _load_system(version: tuple) -> IntegratedFloodSystem:
     return IntegratedFloodSystem(MODEL_DIR)
+
+
+def load_system() -> IntegratedFloodSystem:
+    return _load_system(_engine_version())
 
 
 @st.cache_data(show_spinner=False)
