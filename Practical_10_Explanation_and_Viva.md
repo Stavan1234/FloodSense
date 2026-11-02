@@ -1,3 +1,5 @@
+> **Superseded.** This guide describes the earlier package, which used a modified copy of the dataset and same-day classification. The current project forecasts the next day on the original Pakistan dataset: see `README.md` and `Report/VIVA_GUIDE.md`.
+
 # Practical 10 — Explanation and Viva Guide
 
 ## Aim

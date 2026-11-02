@@ -1,5 +1,5 @@
 Test,Outcome,Result
-Valid 7-day window,accepted → FLOOD WARNING,PASS
+Valid 7-day window,accepted → MONITOR,PASS
 Only 6 days,"refused: Exactly 7 daily rows are required, got 6.",PASS
 Duplicate date,refused: Duplicate dates found.,PASS
 Gap in dates,refused: Dates must be consecutive days.,PASS
@@ -8,4 +8,4 @@ Missing column,refused: Missing columns: ['precipitation'],PASS
 Text instead of numbers,refused: Columns with no numeric values: ['soil_moisture'],PASS
 Not a table,refused: Input must be a table (pandas DataFrame).,PASS
 Same input twice,difference = 0.0e+00,PASS
-±5 % measurement noise (20 runs),decisions changed on 1.0% of days,PASS
+±5 % weather-sensor noise (10 runs),forecasts changed on 0.0% of days,PASS

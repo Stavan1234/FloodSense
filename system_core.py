@@ -1,9 +1,10 @@
-"""FloodSense inference engine.
+"""FloodSense inference engine: next-day flood early warning.
 
 Loads the model trained in ``CIL_Practicals_4_to_10_FloodSense.ipynb`` (files in
 ``model_artifacts/``) and reproduces the notebook's pipeline exactly:
-validate → season features → impute → scale → LSTM → Random Forest on the LSTM
-summary → 50/50 combination → forward-chaining rules. No Streamlit code here.
+validate 7 days → per-day features (season, flood counters) → LSTM + gradient boosting →
+blend (weight chosen by cross-validation) → forward-chaining rules → advisory for TOMORROW.
+No Streamlit code here.
 """
 from pathlib import Path
 
@@ -14,20 +15,19 @@ import torch
 from torch import nn
 
 ENVIRONMENTAL_FEATURES = [
-    "precipitation", "soil_moisture", "temperature", "humidity", "pressure",
-    "wind_speed", "evaporation", "water_area_km2", "water_area_change",
-    "precip_3day_avg", "precip_7day_avg", "temp_3day_avg", "soil_3day_avg",
+    "precipitation", "soil_moisture", "temperature", "humidity", "pressure", "wind_speed", "evaporation",
+    "water_area_km2", "water_area_change", "precip_3day_avg", "precip_7day_avg", "temp_3day_avg", "soil_3day_avg",
 ]
 ADVISORIES = ["LOW RISK", "MONITOR", "FLOOD WATCH", "FLOOD WARNING"]
-TRIGGERS = ["heavy_rain", "wet_soil", "rapid_rise"]
+TRIGGERS = ["flooded_today", "near_line", "heavy_rain", "wet_soil", "rapid_rise"]
 
 
 class FloodLSTM(nn.Module):
     """Same architecture as the notebook: one LSTM layer → last hidden state → dropout → output."""
 
-    def __init__(self, n_features, hidden=32, dropout=0.2):
+    def __init__(self, n_inputs, hidden=16, dropout=0.1):
         super().__init__()
-        self.lstm = nn.LSTM(n_features, hidden, batch_first=True)
+        self.lstm = nn.LSTM(n_inputs, hidden, batch_first=True)
         self.dropout = nn.Dropout(dropout)
         self.head = nn.Linear(hidden, 1)
 
@@ -40,33 +40,32 @@ class FloodLSTM(nn.Module):
 
 
 class IntegratedFloodSystem:
-    def __init__(self, artifact_dir: str | Path):
+    def __init__(self, artifact_dir: str | Path, typical: dict | None = None):
         artifact_dir = Path(artifact_dir)
-        bundle = joblib.load(artifact_dir / "system.joblib")
+        b = joblib.load(artifact_dir / "system.joblib")
         ckpt = torch.load(artifact_dir / "lstm.pt", map_location="cpu", weights_only=True)
-        self.encoder = FloodLSTM(ckpt["n_features"], ckpt["hidden"], ckpt["dropout"])
+        self.encoder = FloodLSTM(ckpt["n_inputs"], ckpt["hidden"], ckpt["dropout"])
         self.encoder.load_state_dict(ckpt["state_dict"])
         self.encoder.eval()
         self.hidden_size = int(ckpt["hidden"])
 
-        self.rf = bundle["rf"]
-        self.rf.n_jobs = 1   # one window at a time: worker pools only add overhead
-        self.imputer, self.scaler = bundle["imputer"], bundle["scaler"]
-        self.env_features = list(bundle["env_features"])
-        self.feature_names = list(bundle["features"])
-        self.window_days = int(bundle["window"])
-        self.thresholds = {k: float(v) for k, v in bundle["thresholds"].items()}   # dl, ml, sys
-        self.rule_levels = {k: float(v) for k, v in bundle["rule_levels"].items()}
-        self.watch_level = float(bundle["watch_level"])
-        self.background = torch.from_numpy(np.asarray(bundle["shap_background"], dtype=np.float32))
-        self.shap_base = float(bundle["shap_base"])
+        self.ml_model, self.ml_name, self.selected = b["ml_model"], b["ml_name"], list(b["selected"])
+        self.seq_imputer, self.seq_scaler = b["seq_imputer"], b["seq_scaler"]
+        self.env_features, self.lstm_inputs, self.ml_daily = list(b["env"]), list(b["lstm_inputs"]), list(b["ml_daily"])
+        self.window_days = int(b["window"])
+        self.flood_line = float(b["flood_line"])
+        self.w_dl = float(b["w_dl"])
+        self.thresholds = {k: float(v) for k, v in b["thresholds"].items()}       # dl, ml, sys
+        self.rule_levels = {k: float(v) for k, v in b["rule_levels"].items()}
+        self.watch_level = float(b["watch_level"])
+        self.typical = typical or {}                                              # training medians, for explanations
         self.rules = [  # (id, advisory, condition in plain words, test on facts): checked top to bottom
-            ("R1", "FLOOD WARNING", "Both models say Flood, or combined score ≥ 75 %",
-             lambda f: (f["dl_flood"] and f["ml_flood"]) or f["score"] >= 0.75),
-            ("R2", "FLOOD WATCH", f"Combined score ≥ {self.watch_level:.0%}, or rapid water rise with heavy rain / wet soil",
-             lambda f: f["score"] >= self.watch_level or (f["rapid_rise"] and (f["heavy_rain"] or f["wet_soil"]))),
-            ("R3", "MONITOR", "Any environmental trigger is active",
-             lambda f: f["heavy_rain"] or f["wet_soil"] or f["rapid_rise"]),
+            ("R1", "FLOOD WARNING", "The system predicts a flood tomorrow (score above the flood line)",
+             lambda f: f["score"] >= self.thresholds["sys"]),
+            ("R2", "FLOOD WATCH", f"A real chance of flooding tomorrow (score ≥ {self.watch_level:.0%})",
+             lambda f: f["score"] >= self.watch_level),
+            ("R3", "MONITOR", "Flooded today, water near the line, or any other warning sign",
+             lambda f: f["flooded_today"] or f["near_line"] or f["heavy_rain"] or f["wet_soil"] or f["rapid_rise"]),
             ("R4", "LOW RISK", "No rule above fired", lambda f: True),
         ]
 
@@ -92,76 +91,91 @@ class IntegratedFloodSystem:
         empty = w[self.env_features].isna().all()
         if empty.any():
             raise ValueError(f"Columns with no numeric values: {w[self.env_features].columns[empty].tolist()}")
+        w[self.env_features] = w[self.env_features].fillna(w[self.env_features].median())
         return w
 
-    def scale(self, w: pd.DataFrame) -> np.ndarray:
-        """Validated window → model input of shape (days, features)."""
-        d = w["date"].dt.day_of_year
-        frame = w[self.env_features].copy()
-        frame["day_of_year_sin"] = np.sin(2 * np.pi * d / 365.25)
-        frame["day_of_year_cos"] = np.cos(2 * np.pi * d / 365.25)
-        return self.scaler.transform(self.imputer.transform(frame[self.feature_names])).astype(np.float32)
+    def frame(self, w: pd.DataFrame) -> pd.DataFrame:
+        """Validated 7 days → per-day features (identical to ``window_frame`` in the notebook)."""
+        f = w[self.env_features].reset_index(drop=True).astype(float).copy()
+        doy = pd.to_datetime(w["date"]).dt.day_of_year.to_numpy()
+        f["day_of_year_sin"], f["day_of_year_cos"] = np.sin(2 * np.pi * doy / 365.25), np.cos(2 * np.pi * doy / 365.25)
+        wet = (f["water_area_km2"].to_numpy() >= self.flood_line).astype(int)
+        fs, ds, a, b = [], [], 0, 0
+        for x in wet:
+            a, b = (a + 1, 0) if x else (0, b + 1)
+            fs.append(a); ds.append(b)
+        f["flood_streak"], f["dry_streak"] = fs, ds
+        return f
+
+    def flat(self, frame: pd.DataFrame) -> pd.Series:
+        n = self.window_days
+        return pd.Series({f"{c}@d{i - n + 1}": frame[c].iloc[i] for c in self.ml_daily for i in range(n)})
 
     # ------------------------------------------------------------------ models
-    def score(self, batch: np.ndarray):
-        """Scaled windows (n, days, features) → (P(LSTM), P(RF), combined)."""
+    def score_frames(self, frames: list[pd.DataFrame]):
+        """Per-day feature tables → (P(LSTM), P(ML), combined) for tomorrow."""
+        seq = np.stack([self.seq_scaler.transform(self.seq_imputer.transform(f[self.lstm_inputs])) for f in frames]).astype(np.float32)
         with torch.no_grad():
-            t = torch.from_numpy(np.ascontiguousarray(batch, dtype=np.float32))
-            p_dl = torch.sigmoid(self.encoder(t)).numpy()
-            emb = self.encoder.embed(t).numpy()
-        p_ml = self.rf.predict_proba(emb)[:, 1]
-        return p_dl, p_ml, 0.5 * p_dl + 0.5 * p_ml
+            p_dl = torch.sigmoid(self.encoder(torch.from_numpy(seq))).numpy()
+        X = pd.DataFrame([self.flat(f) for f in frames])[self.selected]
+        p_ml = self.ml_model.predict_proba(X)[:, 1]
+        return p_dl, p_ml, self.w_dl * p_dl + (1 - self.w_dl) * p_ml
 
     # ------------------------------------------------------------------ rules
-    def facts(self, last_day: pd.Series, p_dl: float, p_ml: float) -> dict:
+    def facts(self, today: pd.Series, p_dl: float, p_ml: float) -> dict:
+        water, L = float(today["water_area_km2"]), self.rule_levels
         return {"dl_flood": p_dl >= self.thresholds["dl"], "ml_flood": p_ml >= self.thresholds["ml"],
-                "score": 0.5 * p_dl + 0.5 * p_ml,
-                "heavy_rain": bool(last_day["precipitation"] >= self.rule_levels["heavy_rain"]),
-                "wet_soil": bool(last_day["soil_moisture"] >= self.rule_levels["wet_soil"]),
-                "rapid_rise": bool(last_day["water_area_change"] >= self.rule_levels["rapid_rise"])}
+                "score": self.w_dl * p_dl + (1 - self.w_dl) * p_ml,
+                "flooded_today": water >= self.flood_line, "near_line": L["near_line"] <= water < self.flood_line,
+                "heavy_rain": bool(today["precipitation"] >= L["heavy_rain"]), "wet_soil": bool(today["soil_moisture"] >= L["wet_soil"]),
+                "rapid_rise": bool(today["water_area_change"] >= L["rapid_rise"])}
 
     def forward_chain(self, facts: dict):
         for rule_id, advisory, text, test in self.rules:
             if test(facts):
                 return advisory, rule_id, text
 
-    # ------------------------------------------------------------------ end to end
-    def predict_window(self, window) -> dict:
-        w = self.validate_window(window)
-        p_dl, p_ml, _ = self.score(self.scale(w)[None])
-        f = self.facts(w.iloc[-1], float(p_dl[0]), float(p_ml[0]))
+    def _result(self, w: pd.DataFrame, p_dl: float, p_ml: float) -> dict:
+        f = self.facts(w.iloc[-1], p_dl, p_ml)
         advisory, rule_id, rule_text = self.forward_chain(f)
-        return {"date": w["date"].iloc[-1].date(), "p_dl": float(p_dl[0]), "p_ml": float(p_ml[0]),
+        today = w["date"].iloc[-1]
+        return {"date": today.date(), "for_date": (today + pd.Timedelta(days=1)).date(), "p_dl": p_dl, "p_ml": p_ml,
                 "score": f["score"], "prediction": "Flood" if f["score"] >= self.thresholds["sys"] else "No Flood",
                 "advisory": advisory, "rule": rule_id, "rule_text": rule_text,
                 "triggers": [t for t in TRIGGERS if f[t]], "facts": f}
 
+    # ------------------------------------------------------------------ end to end
+    def predict_window(self, window) -> dict:
+        return self.predict_windows([window])[0]
+
     def predict_windows(self, windows: list) -> list[dict]:
-        """Several windows in one model call (much faster than one at a time)."""
+        """Several 7-day windows in one model call."""
         ws = [self.validate_window(w) for w in windows]
-        p_dl, p_ml, _ = self.score(np.stack([self.scale(w) for w in ws]))
-        out = []
-        for w, dl, ml in zip(ws, p_dl, p_ml):
-            f = self.facts(w.iloc[-1], float(dl), float(ml))
-            advisory, rule_id, rule_text = self.forward_chain(f)
-            out.append({"date": w["date"].iloc[-1].date(), "p_dl": float(dl), "p_ml": float(ml), "score": f["score"],
-                        "prediction": "Flood" if f["score"] >= self.thresholds["sys"] else "No Flood",
-                        "advisory": advisory, "rule": rule_id, "rule_text": rule_text,
-                        "triggers": [t for t in TRIGGERS if f[t]], "facts": f})
-        return out
+        p_dl, p_ml, _ = self.score_frames([self.frame(w) for w in ws])
+        return [self._result(w, float(a), float(b)) for w, a, b in zip(ws, p_dl, p_ml)]
 
     # ------------------------------------------------------------------ explanation
-    def explain(self, window, n_samples: int = 400, seed: int = 0) -> np.ndarray:
-        """Expected-gradients SHAP values (days × features) for the LSTM flood probability.
+    def explain(self, window):
+        """How much each reading (and each day) moves tomorrow's combined score.
 
-        The same method as ``shap.GradientExplainer`` in the notebook, with the same
-        background windows: values sum (approximately) to P(LSTM) − ``shap_base``.
+        Occlusion: replace a reading's 7 values (or one whole day) with its typical training value,
+        rescore, and take the difference. Positive = it pushed towards a flood tomorrow.
         """
-        x = torch.from_numpy(self.scale(self.validate_window(window)))[None]
-        gen = torch.Generator().manual_seed(seed)
-        ref = self.background[torch.randint(len(self.background), (n_samples,), generator=gen)]
-        alpha = torch.rand(n_samples, 1, 1, generator=gen)
-        path = (ref + alpha * (x - ref)).requires_grad_(True)
-        prob = torch.sigmoid(self.encoder(path))
-        grads, = torch.autograd.grad(prob.sum(), path)
-        return ((x - ref) * grads).mean(0).detach().numpy()
+        w = self.validate_window(window)
+        typical = lambda c: self.typical.get(c, float(w[c].median()))
+        variants, labels = [w], []
+        for c in self.env_features:
+            v = w.copy(); v[c] = typical(c)
+            if c == "water_area_km2":                       # keep the derived change consistent
+                v["water_area_change"] = v["water_area_km2"].diff().fillna(0.0)
+            variants.append(v); labels.append(("reading", c))
+        for d in range(self.window_days):
+            v = w.copy()
+            for c in self.env_features:
+                v.loc[d, c] = typical(c)
+            variants.append(v); labels.append(("day", d))
+        _, _, s = self.score_frames([self.frame(v) for v in variants])
+        base = s[0]
+        readings = {c: base - x for (kind, c), x in zip(labels, s[1:]) if kind == "reading"}
+        days = [base - x for (kind, _), x in zip(labels, s[1:]) if kind == "day"]
+        return float(base), readings, days

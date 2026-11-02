@@ -302,7 +302,7 @@ export default function (component) {
           <div class="bar" title="Soil wetness"><i style="--c:#A0703C;--h:${d.soil * 100}%"></i></div>
           <div class="bar" title="Water area"><i style="--c:#0B6BCB;--h:${d.water * 100}%"></i></div>
         </div>
-        ${d.target ? '<div class="tag">Checked</div>' : ""}
+        ${d.target ? '<div class="tag">Today</div>' : ""}
       </div>`).join("") +
       '<div class="legend"><span style="--c:#4DA3FF">Rain</span><span style="--c:#A0703C">Soil wetness</span><span style="--c:#0B6BCB">Water area</span><span>tap a day for details</span></div>';
     detail.innerHTML = "";
@@ -465,7 +465,7 @@ function build(root, d) {
     .map(([k, v, th, c]) => `<div><span>${k}</span><b>${Math.round(v * 100)}%</b></div>` +
       `<div class="bt" style="--b:${c}"><b data-w="${v * 100}"></b><s style="left:${th * 100}%"></s></div>`).join("");
   stg.innerHTML = `
-   <div class="stage" style="--c:${C[0]}"><div class="t">1 · Input</div><div class="n">7 days × ${d.grid[0].length} readings</div>
+   <div class="stage" style="--c:${C[0]}"><div class="t">1 · Input</div><div class="n">7 days × ${d.grid[0].length} inputs</div>
      <div class="grid">${grid}</div><div class="small">red = above usual · blue = below</div></div>
    <div class="stage" style="--c:${C[1]}"><div class="t">2 · Deep learning</div><div class="n">LSTM reads day by day</div>
      <div class="cells">${d.grid.map(() => "<i></i>").join("")}</div><div class="mem"><b></b></div>
@@ -473,10 +473,10 @@ function build(root, d) {
    <div class="stage" style="--c:${C[2]}"><div class="t">3 · Summary</div><div class="n">${d.emb.length} numbers</div>
      <div class="emb">${d.emb.map((v) => `<i data-h="${8 + Math.abs(v) * 92}"></i>`).join("")}</div>
      <div class="small">the week, compressed</div></div>
-   <div class="stage" style="--c:${C[3]}"><div class="t">4 · Machine learning</div><div class="n">${d.votes.length} trees vote</div>
+   <div class="stage" style="--c:${C[3]}"><div class="t">4 · Machine learning</div><div class="n">${d.votes.length} trees, each fixing the last</div>
      <div class="trees">${d.votes.map(() => "<i></i>").join("")}</div>
-     <div class="small"><b class="vcount">0</b> vote flood</div></div>
-   <div class="stage" style="--c:${C[4]};--r:${d.color}"><div class="t">5 · Decide</div><div class="n">Combine + rules</div>
+     <div class="small"><b class="vcount">0</b> steps point to a flood</div></div>
+   <div class="stage" style="--c:${C[4]};--r:${d.color}"><div class="t">5 · Decide tomorrow</div><div class="n">Blend + rules</div>
      <div class="bars">${bars}</div>
      <div class="rules">${d.rules.map((r, i) => `<span data-i="${i}" style="--r:${r.color}">${r.id} → ${r.label}</span>`).join("")}</div>
      <div class="verdict">${d.label}</div></div>`;

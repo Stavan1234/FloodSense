@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -7,61 +8,67 @@ from fs_components import living_advisory
 system = load_system()
 df = load_data()
 test_start, test_end = test_period()
+LINE = system.flood_line
 
-# Each control maps plain labels to real values taken from the dataset (quantiles of every recorded day).
-CONTROLS = {
-    "rain": ("Rain on the day", "precipitation", ["None", "Light", "Normal", "Heavy", "Very heavy", "Extreme"],
-             [0.0, 0.25, 0.5, 0.9, 0.97, 0.995]),
-    "soil": ("Soil wetness", "soil_moisture", ["Dry", "Normal", "Damp", "Wet", "Saturated"],
-             [0.05, 0.5, 0.75, 0.9, 0.99]),
-    "water": ("Water area since yesterday", "water_area_change",
-              ["Shrinking fast", "Shrinking", "Stable", "Rising", "Rising fast", "Surging"],
-              [0.02, 0.2, 0.5, 0.75, 0.92, 0.99]),
+# Plain labels → real values. Water is relative to the flood line; rain and soil are quantiles of every recorded day.
+WATER = {"Very low": 0.1, "Low": 0.35, "Normal": 0.6, "Near the line": 0.9, "Just above the line": 1.1,
+         "Far above the line": 1.6}
+TREND = {"Falling": np.linspace(1.5, 1.08, 6), "As recorded": None, "Rising": np.linspace(0.55, 0.92, 6)}
+RAIN = {"None": 0.0, "Normal": 0.5, "Heavy": 0.9, "Extreme": 0.995}
+SOIL = {"Dry": 0.05, "Normal": 0.5, "Wet": 0.9, "Saturated": 0.99}
+CONTROLS = {  # key → (title, options)
+    "water": ("Water area today", WATER),
+    "trend": ("Water over the past 6 days", TREND),
+    "rain": ("Rain today", RAIN),
+    "soil": ("Soil wetness today", SOIL),
 }
-WEEK = {"Much drier": 0.25, "Drier": 0.5, "As recorded": 1.0, "Wetter": 2.0, "Much wetter": 3.0}
-SCENARIO_DAY = pd.Timestamp("2025-04-18").date()   # each scenario below was checked on this week
+SCENARIO_DAY = pd.Timestamp("2024-07-19").date()   # each scenario below was checked on this week
 PRESETS = {  # name → (advisory it produces, slider settings)
-    "Calm day": ("LOW RISK", {"rain": "None", "soil": "Normal", "water": "Stable", "week": "As recorded"}),
-    "Soggy ground": ("MONITOR", {"rain": "None", "soil": "Saturated", "water": "Stable", "week": "As recorded"}),
-    "Sudden downpour": ("FLOOD WATCH", {"rain": "Heavy", "soil": "Dry", "water": "Shrinking", "week": "Wetter"}),
-    "Cloudburst": ("FLOOD WARNING", {"rain": "Extreme", "soil": "Wet", "water": "Rising fast", "week": "Wetter"}),
+    "Dry and receding": ("LOW RISK", {"water": "Low", "trend": "Falling", "rain": "None", "soil": "Dry"}),
+    "Water near the line": ("MONITOR", {"water": "Near the line", "trend": "As recorded", "rain": "Normal", "soil": "Normal"}),
+    "Water rising toward the line": ("FLOOD WATCH", {"water": "Near the line", "trend": "Rising", "rain": "Normal", "soil": "Normal"}),
+    "River over the line": ("FLOOD WARNING", {"water": "Far above the line", "trend": "Rising", "rain": "Heavy", "soil": "Wet"}),
 }
 
 
-def level_value(key: str, label: str) -> float:
-    _, feature, labels, qs = CONTROLS[key]
-    return float(df[feature].quantile(qs[labels.index(label)]))
+def quantile(feature: str, q: float) -> float:
+    return float(df[feature].quantile(q))
 
 
-def nearest_label(key: str, value: float) -> str:
-    _, feature, labels, _ = CONTROLS[key]
-    return min(labels, key=lambda lab: abs(level_value(key, lab) - value))
+def recorded_labels(day) -> dict:
+    """Slider positions closest to what was actually recorded on that day."""
+    last = window_ending(df, day).iloc[-1]
+    near = lambda options, value: min(options, key=lambda k: abs(options[k] - value))
+    return {"water": near(WATER, last["water_area_km2"] / LINE), "trend": "As recorded",
+            "rain": min(RAIN, key=lambda k: abs(quantile("precipitation", RAIN[k]) - last["precipitation"])),
+            "soil": min(SOIL, key=lambda k: abs(quantile("soil_moisture", SOIL[k]) - last["soil_moisture"]))}
 
 
 def reset_to(day) -> None:
-    last = window_ending(df, day).iloc[-1]
-    for key, (_, feature, _, _) in CONTROLS.items():
-        st.session_state[f"wi_{key}"] = nearest_label(key, last[feature])
-    st.session_state.wi_week = "As recorded"
+    st.session_state.wi_rec = recorded_labels(day)
+    for key, label in st.session_state.wi_rec.items():
+        st.session_state[f"wi_{key}"] = label
     st.session_state.wi_for = day
 
 
 def apply_preset(name: str) -> None:
-    st.session_state.wi_day = st.session_state.wi_for = SCENARIO_DAY
+    st.session_state.wi_day = SCENARIO_DAY
+    reset_to(SCENARIO_DAY)
     for key, label in PRESETS[name][1].items():
         st.session_state[f"wi_{key}"] = label
 
 
-def edited_window(base: pd.DataFrame, rain=None, soil=None, water=None, week=1.0) -> pd.DataFrame:
-    """Apply changes to the last day and keep the derived averages consistent."""
-    w = base.copy()
+def edited_window(base: pd.DataFrame, water=None, trend=None, rain=None, soil=None) -> pd.DataFrame:
+    """Apply changes to the week and keep the derived columns (change, averages) consistent."""
+    w = base.copy().reset_index(drop=True)
     last = w.index[-1]
-    w["precipitation"] = w["precipitation"] * week
-    if rain is not None: w.loc[last, "precipitation"] = rain
-    if soil is not None: w.loc[last, "soil_moisture"] = soil
     if water is not None:
-        w.loc[last, "water_area_change"] = water
-        w.loc[last, "water_area_km2"] = max(0.0, float(w["water_area_km2"].iloc[-2]) + water)
+        w.loc[last, "water_area_km2"] = WATER[water] * LINE
+    if trend is not None and TREND[trend] is not None:
+        w.loc[:last - 1, "water_area_km2"] = TREND[trend] * w.loc[last, "water_area_km2"]
+    w.loc[1:, "water_area_change"] = w["water_area_km2"].diff().iloc[1:]
+    if rain is not None: w.loc[last, "precipitation"] = quantile("precipitation", RAIN[rain])
+    if soil is not None: w.loc[last, "soil_moisture"] = quantile("soil_moisture", SOIL[soil])
     w.loc[last, "precip_3day_avg"] = w["precipitation"].iloc[-3:].mean()
     w.loc[last, "precip_7day_avg"] = w["precipitation"].mean()
     w.loc[last, "soil_3day_avg"] = w["soil_moisture"].iloc[-3:].mean()
@@ -69,7 +76,7 @@ def edited_window(base: pd.DataFrame, rain=None, soil=None, water=None, week=1.0
 
 
 st.title("What-if lab", icon=":material/tune:")
-st.caption("Change the weather on any day and watch the flood risk respond. One tap shows each risk level.")
+st.caption("Change today's water and weather, and watch tomorrow's flood risk respond. One tap shows each risk level.")
 
 st.markdown("**Try a scenario**")
 with st.container(horizontal=True):
@@ -82,31 +89,32 @@ day = day_col.date_input("Start from the week ending", min_value=test_start, max
                          format="DD/MM/YYYY", key="wi_day")
 if st.session_state.get("wi_for") != day:
     reset_to(day)
-reset_col.button("Back to recorded weather", icon=":material/restart_alt:", on_click=reset_to, args=(day,), type="tertiary")
+reset_col.button("Back to recorded data", icon=":material/restart_alt:", on_click=reset_to, args=(day,), type="tertiary")
 
 base = window_ending(df, day)
 controls, results = st.columns([1, 1.5], gap="large")
 with controls, st.container(border=True):
     chosen = {}
-    for key, (title, feature, labels, _) in CONTROLS.items():
-        label = st.select_slider(title, labels, key=f"wi_{key}")
-        chosen[key] = level_value(key, label)
-        normal = float(df[feature].median())
-        if key != "water" and normal > 0:
-            st.caption(f"≈ {chosen[key] / normal:.1f}× a normal day")
-    week = WEEK[st.select_slider("Rain over the past week", list(WEEK), key="wi_week")]
+    for key, (title, options) in CONTROLS.items():
+        label = st.select_slider(title, list(options), key=f"wi_{key}")
+        chosen[key] = None if label == st.session_state.wi_rec[key] else label   # untouched → keep the real reading
+        if key == "water":
+            value = base["water_area_km2"].iloc[-1] if chosen[key] is None else WATER[label] * LINE
+            st.caption(f"≈ {value:,.0f} km² · flood line {LINE:,.0f} km²")
+    st.caption("Untouched sliders keep the real reading of that day.")
 
-after_window = edited_window(base, chosen["rain"], chosen["soil"], chosen["water"], week)
-parts = {"Rain on the day": edited_window(base, rain=chosen["rain"]),
-         "Soil wetness": edited_window(base, soil=chosen["soil"]),
-         "Water area": edited_window(base, water=chosen["water"]),
-         "Past week's rain": edited_window(base, week=week)}
+after_window = edited_window(base, **chosen)
+parts = {"Water area today": edited_window(base, water=chosen["water"]),
+         "Water over the week": edited_window(base, trend=chosen["trend"]),
+         "Rain today": edited_window(base, rain=chosen["rain"]),
+         "Soil wetness": edited_window(base, soil=chosen["soil"])}
 before, after, *singles = system.predict_windows([base, after_window, *parts.values()])   # one model call
 
 with results:
     lb, la = LEVELS[before["advisory"]], LEVELS[after["advisory"]]
     living_advisory(**advisory_props(after, df, after_window, None,
-                                     f"Your week · recorded week was {lb['label']} at {before['score']:.0%}",
+                                     f"Your scenario · forecast for {after['for_date']:%d %b %Y} · "
+                                     f"recorded data gave {lb['label']} at {before['score']:.0%}",
                                      system.thresholds["sys"]), key="whatif_advisory")
     if st.session_state.get("wi_last") not in (None, after["advisory"]):   # only when the advisory just changed
         st.toast(f"Advisory now: {la['label']}", icon=la["icon"])
@@ -115,3 +123,5 @@ with results:
     effect = {k: (r["score"] - before["score"]) * 100 for k, r in zip(parts, singles)}   # each change on its own
     st.markdown("**What moved the risk** · each change on its own")
     st.echarts_chart(ec_push_bars(list(effect), list(effect.values()), "change in flood score (points)"), height=220)
+    st.caption("Here floods come from river water spreading over the plain, so the water area moves the risk far "
+               "more than a single day's rain. Rain and wet soil still raise a Monitor flag.")
