@@ -1,6 +1,6 @@
 # FloodSense
 
-**Can AI recognise a flood day?** An integrated flood-risk system (LSTM → Random Forest → rule engine) with a beginner-friendly Streamlit website that validates, explains and deploys it.
+**Can AI recognise a flood day?** Pick a day and FloodSense reads a week of weather and satellite data, gives a clear flood-risk level, and shows why. Deep learning (LSTM) → machine learning (Random Forest) → transparent rules.
 
 Computational Intelligence Laboratory, **Practical 10**: validation, interpretation, ethics and deployment (LO 4.2).
 
@@ -47,42 +47,40 @@ Every push to `main` redeploys automatically. Apps with no visitors for a while 
 
 | Page | What you can do |
 |---|---|
-| Start here | Plain-English overview, key results, 3-step guide |
-| Check a day | Pick a date (or upload a 7-day CSV) → see the readings → get an advisory with its reasons |
-| What-if lab | Move rain / soil / water sliders and watch the decision change |
-| Test results | Scorecard, confusion matrix, timeline, monthly stability, every mistake |
-| Why the AI decides | Occlusion importance, LSTM vs Random Forest agreement, rule flowchart |
-| Input safety tests | Live validation tests and a "try to break it" table |
-| Responsible AI | Error trade-off, fairness, data bias, ethics, readiness |
+| Home | One-sentence intro, a live result for the latest day, key numbers |
+| Check a day | Pick a day (or upload 7 days) → instant risk level, gauge, top reasons, SHAP chart and the rule that fired |
+| What-if lab | One-click scenarios (Cloudburst, Dry spell, River swelling) and sliders with plain labels; see the risk move |
+| How it works | Animated pipeline and LSTM diagrams, the three engines, the four rules |
+| Can I trust it? | Calendar of all 204 unseen days (click to open one), performance over time, what it looks at, safety checks, limits |
 
 ## How it works
 
 ```
-7 days × 13 readings → validation → imputer + scaler → LSTM encoder (32-d)
+7 days × 13 readings → validate → impute + scale → LSTM (32-number summary of the week)
         ├─ LSTM probability ───────────────┐
-        └─ Random Forest (250 trees) ──────┴─ 50/50 combine → rule engine → LOW RISK / MONITOR / FLOOD WATCH / FLOOD WARNING
+        └─ Random Forest (250 trees) ──────┴─ 50/50 combine → 4 IF–THEN rules → LOW RISK / MONITOR / FLOOD WATCH / FLOOD WARNING
 ```
+
+The website loads exactly the model trained in the notebook (`model_artifacts/`, `site_data/` are written by its export cell), so both show the same numbers.
 
 ## Results on 204 unseen test days (Mar–Sep 2025)
 
-| Accuracy | Recall (floods caught) | Precision | F1 | Missed floods | False alarms |
+| Accuracy | Floods caught | Precision | F1 | Missed floods | False alarms |
 |---|---|---|---|---|---|
-| 89.7% | 83.3% | 89.0% | 0.861 | 13 | 8 |
+| 89.7% | 70 of 78 (89.7%) | 84.3% | 0.870 | 8 | 13 |
 
 ## Project structure
 
 ```
-streamlit_app.py           Website entry point and navigation
-app_pages/                 One file per page
-flood_ui.py                Shared loaders, occlusion explanations, UI helpers
-system_core.py             Input validation + integrated inference (Practical 9 pipeline)
-model_artifacts/           Saved LSTM weights, Random Forest, preprocessing, thresholds
-input_data/                Educational flood dataset
-practical10_results/       Metrics, tests and figures from the notebook
-CIL_Practical_10_Validation_and_Deployment.ipynb   Validation notebook
+streamlit_app.py           Website entry point and top navigation
+app_pages/                 home · check_day · what_if · how_it_works · trust
+flood_ui.py                Shared loaders, SHAP explanations, Plotly components
+system_core.py             The notebook's pipeline: validation, LSTM, Random Forest, rules, SHAP
+model_artifacts/           Trained LSTM + Random Forest + preprocessing (exported by the notebook)
+site_data/                 Clean dataset and evaluation results (exported by the notebook)
+CIL_Practicals_4_to_10_FloodSense.ipynb   Full notebook, Tasks 4–10
 .streamlit/config.toml     Light and dark theme
-setup.bat                  One-time setup for Windows (venv + packages)
-run.bat                    One-click launcher for Windows
+setup.bat / run.bat        One-click setup and launcher for Windows
 ```
 
 ## Known limitations

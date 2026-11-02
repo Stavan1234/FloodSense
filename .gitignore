@@ -23,3 +23,7 @@ Syllabus*.pdf
 # OS
 Thumbs.db
 .DS_Store
+
+# Notebook run outputs (figures/zip); the website files live in model_artifacts/ and site_data/
+floodsense_outputs/
+FloodSense_Practicals_4_to_10_outputs.zip

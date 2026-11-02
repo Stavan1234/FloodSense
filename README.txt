@@ -2,14 +2,16 @@ COMPUTATIONAL INTELLIGENCE LABORATORY — PRACTICAL 10
 Validation, Interpretation, Evaluation and Deployment Readiness
 
 PACKAGE CONTENTS
-- CIL_Practical_10_Validation_and_Deployment.ipynb : executable validation notebook
-- streamlit_app.py : website entry point (FloodSense, multi-page Streamlit app)
-- app_pages/ : one file per website page (Check a day, What-if lab, Test results, Why the AI decides,
-  Input safety tests, Responsible AI)
-- flood_ui.py : shared loading, occlusion-based explanations and plain-language helpers
+- CIL_Practicals_4_to_10_FloodSense.ipynb : full notebook (Tasks 4-10); its export cell writes
+  model_artifacts/ and site_data/, which the website loads
+- CIL_Practical_10_Validation_and_Deployment.ipynb : original Practical 10 validation notebook
+- streamlit_app.py : website entry point (FloodSense, top navigation)
+- app_pages/ : Home, Check a day, What-if lab, How it works, Can I trust it?
+- flood_ui.py : shared loading, SHAP explanations and Plotly components
 - .streamlit/config.toml : website theme (light and dark)
-- system_core.py : reusable inference and input-validation code
-- model_artifacts/ : saved Practical 9 LSTM weights, Random Forest, preprocessing, and metadata
+- system_core.py : the notebook's pipeline (validation, LSTM, Random Forest, rules, SHAP)
+- model_artifacts/ : trained LSTM, Random Forest and preprocessing exported by the notebook
+- site_data/ : clean dataset and evaluation results exported by the notebook
 - input_data/flood_dataset.csv : educational dataset used for the lab demonstration
 - validation_data_task9_predictions.csv : saved held-out predictions from Practical 9
 - Practical_10_Explanation_and_Viva.md : separate beginner-friendly guide and viva questions

@@ -1,68 +1,62 @@
 import streamlit as st
-from flood_ui import load_run_summary, load_test_predictions
 
-summary = load_run_summary()
-preds = load_test_predictions()
-n_test = summary["test_rows"]
-n_flood = int((preds["Actual"] == "Flood").sum())
-caught = n_flood - summary["false_negatives"]
-
-st.badge("Practical 10 · Validation, explanation & deployment", icon=":material/verified:", color="primary")
-st.title("FloodSense: can AI recognise a flood day?")
-st.markdown(
-    "This website lets you **use and inspect** an AI system that looks at **7 days of weather and satellite "
-    "readings** and decides whether the **last of those days** is a flood day. "
-    "It combines three kinds of intelligence: a **deep-learning** model that reads the week as a sequence, "
-    "a **machine-learning** model that makes a second opinion, and a set of **transparent rules** that turn "
-    "the scores into a clear advisory such as *Low risk* or *Flood warning*."
+from flood_ui import (
+    LEVELS, actual_label, advisory_banner, cached_explain, drivers, load_data, load_summary, load_system,
+    risk_gauge, show_drivers, window_ending,
 )
 
+system = load_system()
+df = load_data()
+summary = load_summary()
+c = summary["confusion"]
+
+hero, demo = st.columns([1, 1.15], gap="large", vertical_alignment="center")
+with hero:
+    st.markdown("# :material/water_drop: FloodSense")
+    st.markdown("### Is today a flood day? FloodSense reads a week of weather and satellite data, "
+                "gives a clear risk level, and **shows why**.")
+    with st.container(horizontal=True):
+        if st.button("Check a day", icon=":material/radar:", type="primary"):
+            st.switch_page("app_pages/check_day.py")
+        if st.button("Try the What-if lab", icon=":material/tune:"):
+            st.switch_page("app_pages/what_if.py")
+
+with demo, st.container(border=True):
+    latest = df["date"].iloc[-1].date()
+    window = window_ending(df, latest)
+    result = system.predict_window(window)
+    feats, _ = cached_explain(str(latest))
+    st.caption(":material/bolt: Live result · latest day in the data")
+    advisory_banner(result, actual_label(df, latest))
+    g, r = st.columns([1.1, 1], vertical_alignment="center")
+    g.plotly_chart(risk_gauge(result["score"], system.thresholds["sys"], height=200), config={"displayModeBar": False})
+    with r:
+        show_drivers(drivers(feats, window, df, n=2))
+
+st.space("medium")
+steps = st.columns(3, gap="medium")
+for col, (icon, title, text) in zip(steps, [
+    (":material/calendar_month:", "1 · Pick a day", "Any day in the dataset, or upload your own 7 days."),
+    (":material/neurology:", "2 · AI reads the week", "Two models score the week; simple rules decide the level."),
+    (":material/assignment_turned_in:", "3 · Get the answer", "Risk level, what to do, and the reasons behind it."),
+]):
+    with col.container(border=True, height="stretch"):
+        st.markdown(f"#### {icon} {title}")
+        st.caption(text)
+
+st.space("small")
+st.markdown("**Tested on 204 days it had never seen**")
 with st.container(horizontal=True):
-    st.page_link("app_pages/check_day.py", label="Try it now: check a day", icon=":material/radar:")
-    st.page_link("app_pages/results.py", label="See how accurate it is", icon=":material/fact_check:")
+    st.metric("Floods caught", f"{c['tp']} of {c['tp'] + c['fn']}", border=True,
+              help="Real floods that FloodSense flagged.")
+    st.metric("Days judged correctly", f"{summary['metrics']['Accuracy']:.0%}", border=True,
+              help="Flood and non-flood days combined.")
+    st.metric("False alarms", c["fp"], border=True, help="Days flagged as flood when none happened.")
+if st.button("See how far you can trust it", icon=":material/verified_user:", type="tertiary"):
+    st.switch_page("app_pages/trust.py")
 
 st.space("small")
-st.subheader("Tested on days it had never seen", icon=":material/insights:")
+st.markdown("**The four risk levels**")
 with st.container(horizontal=True):
-    st.metric("Unseen test days", n_test, border=True, help="Days from March–September 2025 kept aside and never used for training or tuning.")
-    st.metric("Correct decisions", f"{summary['test_accuracy']:.1%}", border=True, help="Share of the 204 test days where Flood / No Flood was right.")
-    st.metric("Floods caught", f"{caught} of {n_flood}", border=True, help="Real flood days the system recognised (recall).")
-    st.metric("False alarms", summary["false_positives"], border=True, help="Normal days wrongly flagged as flood days.")
-    st.metric("Safety tests passed", f"{summary['input_validation_tests_passed']} / {summary['input_validation_tests_total']}", border=True, help="Bad inputs (missing days, duplicates…) that the system correctly refused.")
-
-st.space("small")
-st.subheader("How to use this website", icon=":material/route:")
-c1, c2, c3 = st.columns(3)
-with c1.container(border=True, height="stretch"):
-    st.markdown("##### :material/looks_one: Pick a day")
-    st.markdown("Open **Check a day** and choose any date from the dataset, or upload your own 7-day CSV file.")
-with c2.container(border=True, height="stretch"):
-    st.markdown("##### :material/looks_two: Get the decision")
-    st.markdown("Press **Check flood risk**. You get a coloured advisory, the flood score, and whether it was right.")
-with c3.container(border=True, height="stretch"):
-    st.markdown("##### :material/looks_3: Understand why")
-    st.markdown("See which readings and which days pushed the decision, and which safety rules fired.")
-
-st.space("small")
-st.subheader("What each page shows", icon=":material/map:")
-pages = [
-    ("app_pages/check_day.py", "Check a day", ":material/radar:", "Run the full AI system on any 7-day window and get an explained result."),
-    ("app_pages/what_if.py", "What-if lab", ":material/tune:", "Move sliders (more rain, wetter soil…) and watch the decision change live."),
-    ("app_pages/results.py", "Test results", ":material/fact_check:", "Accuracy, caught floods, false alarms and month-by-month stability on unseen data."),
-    ("app_pages/explainability.py", "Why the AI decides", ":material/psychology:", "Which inputs matter most overall, and the exact rules behind each advisory."),
-    ("app_pages/safety_tests.py", "Input safety tests", ":material/shield:", "Live tests proving the system refuses broken or incomplete data."),
-    ("app_pages/responsible_ai.py", "Responsible AI", ":material/balance:", "Ethics, fairness, bias, limitations, and why this is not a real warning service."),
-]
-cols = st.columns(3)
-for i, (path, title, icon, desc) in enumerate(pages):
-    with cols[i % 3].container(border=True, height="stretch"):
-        st.page_link(path, label=title, icon=icon)
-        st.caption(desc)
-
-st.space("small")
-st.warning(
-    "This is a classroom project built on an educational dataset. It classifies the **same day** at the end of a "
-    "7-day window. It does **not** forecast tomorrow, and it must **never** be used for real emergency decisions.",
-    title="Important limitation",
-    icon=":material/report:",
-)
+    for lvl in LEVELS.values():
+        st.badge(f"{lvl['label']}: {lvl['action']}", color=lvl["color"], icon=lvl["icon"])

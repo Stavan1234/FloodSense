@@ -1,97 +1,127 @@
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from flood_ui import (
-    ADVISORY_STYLE, FEATURE_HELP, FRIENDLY_NAMES, contribution_chart, explain_window,
-    load_dataset, load_system, load_test_predictions, pct, show_advisory, window_ending,
+    DOWN, LEVELS, UP, _style, load_data, load_system, risk_gauge, test_period, window_ending,
 )
 
 system = load_system()
-df = load_dataset()
-preds = load_test_predictions()
+df = load_data()
+test_start, test_end = test_period()
+
+# Each control maps plain labels to real values taken from the dataset (quantiles of every recorded day).
+CONTROLS = {
+    "rain": ("Rain on the day", "precipitation", ["None", "Light", "Normal", "Heavy", "Very heavy", "Extreme"],
+             [0.0, 0.25, 0.5, 0.9, 0.97, 0.995]),
+    "soil": ("Soil wetness", "soil_moisture", ["Dry", "Normal", "Damp", "Wet", "Saturated"],
+             [0.05, 0.5, 0.75, 0.9, 0.99]),
+    "water": ("Water area since yesterday", "water_area_change",
+              ["Shrinking fast", "Shrinking", "Stable", "Rising", "Rising fast", "Surging"],
+              [0.02, 0.2, 0.5, 0.75, 0.92, 0.99]),
+}
+WEEK = {"Much drier": 0.25, "Drier": 0.5, "As recorded": 1.0, "Wetter": 2.0, "Much wetter": 3.0}
+PRESETS = {
+    "Cloudburst": {"rain": "Extreme", "soil": "Wet", "water": "Rising fast", "week": "Wetter"},
+    "Dry spell": {"rain": "None", "soil": "Dry", "water": "Shrinking", "week": "Much drier"},
+    "River swelling": {"rain": "Normal", "soil": "Damp", "water": "Surging", "week": "As recorded"},
+}
+
+
+def level_value(key: str, label: str) -> float:
+    _, feature, labels, qs = CONTROLS[key]
+    return float(df[feature].quantile(qs[labels.index(label)]))
+
+
+def nearest_label(key: str, value: float) -> str:
+    _, feature, labels, _ = CONTROLS[key]
+    return min(labels, key=lambda lab: abs(level_value(key, lab) - value))
+
+
+def reset_to(day) -> None:
+    last = window_ending(df, day).iloc[-1]
+    for key, (_, feature, _, _) in CONTROLS.items():
+        st.session_state[f"wi_{key}"] = nearest_label(key, last[feature])
+    st.session_state.wi_week = "As recorded"
+    st.session_state.wi_for = day
+
+
+def apply_preset(name: str) -> None:
+    for key, label in PRESETS[name].items():
+        st.session_state[f"wi_{key}"] = label
+
+
+def edited_window(base: pd.DataFrame, rain=None, soil=None, water=None, week=1.0) -> pd.DataFrame:
+    """Apply changes to the last day and keep the derived averages consistent."""
+    w = base.copy()
+    last = w.index[-1]
+    w["precipitation"] = w["precipitation"] * week
+    if rain is not None: w.loc[last, "precipitation"] = rain
+    if soil is not None: w.loc[last, "soil_moisture"] = soil
+    if water is not None:
+        w.loc[last, "water_area_change"] = water
+        w.loc[last, "water_area_km2"] = max(0.0, float(w["water_area_km2"].iloc[-2]) + water)
+    w.loc[last, "precip_3day_avg"] = w["precipitation"].iloc[-3:].mean()
+    w.loc[last, "precip_7day_avg"] = w["precipitation"].mean()
+    w.loc[last, "soil_3day_avg"] = w["soil_moisture"].iloc[-3:].mean()
+    return w
+
 
 st.title("What-if lab", icon=":material/tune:")
-st.markdown(
-    "Start from a real week, then **change the last day's conditions** with the sliders. "
-    "The AI re-runs instantly so you can see **what it is sensitive to**. "
-    "This is called *sensitivity analysis* and is a simple way to test whether a model behaves sensibly."
-)
+st.caption("Change the weather on any day and watch the flood risk respond.")
 
-c1, c2 = st.columns([1, 2], vertical_alignment="bottom")
-day = c1.date_input("Starting week ends on", value=pd.Timestamp("2025-04-18").date(),
-                    min_value=preds["date"].min().date(), max_value=preds["date"].max().date(),
-                    format="DD/MM/YYYY", help="Only unseen test days are offered here.")
-c2.caption("Tip: start from a calm day and add rain and rising water, or start from a flood day and dry it out.")
+day = st.columns([1, 3])[0].date_input("Start from the week ending", value=pd.Timestamp("2025-04-18").date(),
+                    min_value=test_start, max_value=test_end, format="DD/MM/YYYY")
+if st.session_state.get("wi_for") != day:
+    reset_to(day)
 
-base_window = window_ending(df, day, system.window_days).reset_index(drop=True)
-last = base_window.iloc[-1]
-k = str(day)
+with st.container(horizontal=True):
+    for name, icon in zip(PRESETS, [":material/thunderstorm:", ":material/sunny:", ":material/water:"]):
+        st.button(name, icon=icon, on_click=apply_preset, args=(name,))
+    st.button("Reset", icon=":material/restart_alt:", on_click=reset_to, args=(day,), type="tertiary")
 
+base = window_ending(df, day)
+controls, results = st.columns([1, 1.5], gap="large")
+with controls, st.container(border=True):
+    chosen = {}
+    for key, (title, feature, labels, _) in CONTROLS.items():
+        label = st.select_slider(title, labels, key=f"wi_{key}")
+        chosen[key] = level_value(key, label)
+        normal = float(df[feature].median())
+        if key != "water" and normal > 0:
+            st.caption(f"≈ {chosen[key] / normal:.1f}× a normal day")
+    week = WEEK[st.select_slider("Rain over the past week", list(WEEK), key="wi_week")]
 
-def bounds(feature):
-    col = pd.to_numeric(df[feature], errors="coerce").dropna()
-    return float(col.min()), float(col.max())
+before = system.predict_window(base)
+after_window = edited_window(base, chosen["rain"], chosen["soil"], chosen["water"], week)
+after = system.predict_window(after_window)
 
+with results:
+    a, b = st.columns(2)
+    a.plotly_chart(risk_gauge(before["score"], system.thresholds["sys"], "Recorded week", 210),
+                   config={"displayModeBar": False})
+    b.plotly_chart(risk_gauge(after["score"], system.thresholds["sys"], "Your week", 210),
+                   config={"displayModeBar": False})
+    lb, la = LEVELS[before["advisory"]], LEVELS[after["advisory"]]
+    with st.container(horizontal=True, horizontal_alignment="center", vertical_alignment="center"):
+        st.badge(lb["label"], color=lb["color"], icon=lb["icon"])
+        st.markdown(":material/arrow_forward:")
+        st.badge(la["label"], color=la["color"], icon=la["icon"])
+    if st.session_state.get("wi_last") not in (None, after["advisory"]):   # only when the advisory just changed
+        st.toast(f"Advisory now: {la['label']}", icon=la["icon"])
+    st.session_state.wi_last = after["advisory"]
 
-st.subheader("Change the last day", icon=":material/sliders:")
-with st.container(border=True):
-    s1, s2 = st.columns(2, gap="large")
-    lo, hi = bounds("precipitation")
-    rain = s1.slider(f"{FRIENDLY_NAMES['precipitation']} on the last day", lo, hi, float(last["precipitation"]),
-                     key=f"rain_{k}", help=FEATURE_HELP["precipitation"], format="%.3f")
-    lo, hi = bounds("soil_moisture")
-    soil = s2.slider(f"{FRIENDLY_NAMES['soil_moisture']} on the last day", lo, hi, float(last["soil_moisture"]),
-                     key=f"soil_{k}", help=FEATURE_HELP["soil_moisture"], format="%.3f")
-    lo, hi = bounds("water_area_change")
-    change = s1.slider(f"{FRIENDLY_NAMES['water_area_change']} since yesterday (km²)", lo, hi,
-                       float(last["water_area_change"]), key=f"chg_{k}", help=FEATURE_HELP["water_area_change"], format="%.0f")
-    week_rain = s2.slider("Make the whole week rainier or drier", 0.0, 3.0, 1.0, 0.1, key=f"wk_{k}",
-                          help="Multiplies every day's rainfall. 1.0 = unchanged, 2.0 = twice as much rain.",
-                          format="%.1f×")
-    st.button("Reset sliders", icon=":material/restart_alt:",
-              on_click=lambda: [st.session_state.pop(x, None) for x in (f"rain_{k}", f"soil_{k}", f"chg_{k}", f"wk_{k}")])
-
-# Build the edited window and keep the derived rolling averages consistent with the edits.
-w = base_window.copy()
-w["precipitation"] = w["precipitation"] * week_rain
-w.loc[w.index[-1], "precipitation"] = rain
-w.loc[w.index[-1], "soil_moisture"] = soil
-w.loc[w.index[-1], "water_area_change"] = change
-w.loc[w.index[-1], "water_area_km2"] = max(0.0, float(w["water_area_km2"].iloc[-2]) + change)
-w.loc[w.index[-1], "precip_3day_avg"] = w["precipitation"].iloc[-3:].mean()
-w.loc[w.index[-1], "precip_7day_avg"] = w["precipitation"].mean()
-w.loc[w.index[-1], "soil_3day_avg"] = w["soil_moisture"].iloc[-3:].mean()
-
-before = system.predict_window(base_window)
-after = system.predict_window(w)
-
-st.subheader("Effect on the decision", icon=":material/compare_arrows:")
-b, a = st.columns(2, gap="large")
-with b:
-    s = ADVISORY_STYLE[before["AI_advisory"]]
-    st.markdown("**Original week**")
-    st.metric("Flood score", pct(before["integrated_probability"]), border=True)
-    st.markdown(f"### :{s['color']}[{s['icon']} {s['headline']}]")
-with a:
-    s = ADVISORY_STYLE[after["AI_advisory"]]
-    st.markdown("**Your edited week**")
-    diff = (after["integrated_probability"] - before["integrated_probability"]) * 100
-    st.metric("Flood score", pct(after["integrated_probability"]), delta=f"{diff:+.1f} points",
-              delta_color="inverse", border=True)
-    st.markdown(f"### :{s['color']}[{s['icon']} {s['headline']}]")
-
-if before["AI_advisory"] != after["AI_advisory"]:
-    st.info(f"Your changes moved the advisory from **{ADVISORY_STYLE[before['AI_advisory']]['headline']}** "
-            f"to **{ADVISORY_STYLE[after['AI_advisory']]['headline']}**.", icon=":material/swap_horiz:")
-
-with st.expander("Full result for the edited week", icon=":material/assignment:"):
-    show_advisory(after)
-    _, feat, _ = explain_window(system, w)
-    st.markdown("**Which readings mattered for the edited week**")
-    st.altair_chart(contribution_chart(feat), alt="Contribution of each reading for the edited week")
-
-st.caption(
-    "Note: the model learned from an educational dataset, so some reactions may surprise you "
-    "(for example, the model leans heavily on *change in water area*). "
-    "Spotting such behaviour is exactly why we test and explain AI systems. See *Responsible AI*."
-)
+    # How much each change moves the risk on its own.
+    parts = {"Rain on the day": edited_window(base, rain=chosen["rain"]),
+             "Soil wetness": edited_window(base, soil=chosen["soil"]),
+             "Water area": edited_window(base, water=chosen["water"]),
+             "Past week's rain": edited_window(base, week=week)}
+    effect = pd.Series({k: system.predict_window(w)["score"] - before["score"] for k, w in parts.items()}) * 100
+    fig = go.Figure(go.Bar(x=effect.values, y=effect.index, orientation="h",
+                           marker_color=np.where(effect.values > 0, UP, DOWN),
+                           text=[f"{v:+.0f}" for v in effect.values], textposition="outside", cliponaxis=False,
+                           hovertemplate="%{y}: %{x:+.1f} points<extra></extra>"))
+    fig.update_xaxes(title="Change in flood score on its own (points)", zeroline=True, zerolinecolor="#8C9AAB")
+    st.markdown("**What moved the risk**")
+    st.plotly_chart(_style(fig, 200), config={"displayModeBar": False})
