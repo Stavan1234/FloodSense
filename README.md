@@ -8,7 +8,11 @@ Computational Intelligence Laboratory, **Practical 10**: validation, interpretat
 
 ## Quick start
 
-**Windows:** double-click **`run.bat`**. The first run creates a virtual environment and installs packages; after that it starts straight away and opens the site in your browser.
+**Windows:**
+1. Double-click **`setup.bat`** once. It creates a virtual environment and installs the packages.
+2. Double-click **`run.bat`** to start the website in your browser. (If you skip step 1, `run.bat` runs setup for you.)
+
+Run `setup.bat` again any time to reinstall or update packages.
 
 **Any OS:**
 
@@ -61,6 +65,7 @@ input_data/                Educational flood dataset
 practical10_results/       Metrics, tests and figures from the notebook
 CIL_Practical_10_Validation_and_Deployment.ipynb   Validation notebook
 .streamlit/config.toml     Light and dark theme
+setup.bat                  One-time setup for Windows (venv + packages)
 run.bat                    One-click launcher for Windows
 ```
 
