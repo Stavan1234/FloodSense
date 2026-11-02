@@ -4,17 +4,20 @@ import streamlit as st
 from flood_ui import (
     FRIENDLY, LEVELS, SAMPLE_CSV_PATH, actual_next, advisory_props, cached_explain, cached_predict, decision_steps,
     drivers, ec_day_bars, ec_push_bars, ec_trends, impact_tables, load_data, load_predictions, load_system,
-    model_scores, test_period, week_days, window_ending,
+    model_scores, week_days, window_ending,
 )
 from fs_components import living_advisory, reason_cards, week_strip
 
 system = load_system()
 df = load_data()
 preds = load_predictions()
-first_day, last_day = df["date"].iloc[system.window_days - 1].date(), df["date"].iloc[-1].date()
-test_start, test_end = test_period()
+ONE_DAY = pd.Timedelta(days=1)
+# The picker is the day you want a forecast FOR; the engine reads the 7 days that end the day before.
+first_day = (df["date"].iloc[system.window_days - 1] + ONE_DAY).date()
+last_day = (df["date"].iloc[-1] + ONE_DAY).date()                       # a true forecast: no answer in the data yet
+test_start, test_end = preds["for"].min().date(), preds["for"].max().date()
 
-if "day" in st.query_params:  # deep link, e.g. ?day=2024-08-20
+if "day" in st.query_params:  # deep link, e.g. ?day=2024-08-20 (the forecast day)
     st.session_state.day = pd.Timestamp(st.query_params["day"]).date()
     del st.query_params["day"]
 st.session_state.setdefault("day", test_end)
@@ -35,13 +38,14 @@ def use_example():
     choice = st.session_state.example
     if choice:
         rows = preds[EXAMPLES[choice]]
-        st.session_state.day = rows["today"].iloc[len(rows) // 2].date()
+        st.session_state.day = rows["for"].iloc[len(rows) // 2].date()
         st.session_state.source = "Dataset"
     st.session_state.example = None
 
 
 st.title("Check a day", icon=":material/radar:")
-st.caption("Pick a day: FloodSense reads that day and the 6 before it, then forecasts whether **the next day** floods, and why.")
+st.caption("Pick the day you want to know about: FloodSense reads **the 7 days before it** and forecasts whether "
+           "that day floods, and why.")
 
 left, right = st.columns([1, 2.6], gap="large")
 with left:
@@ -50,13 +54,17 @@ with left:
                                       label_visibility="collapsed")
         window, actual = None, None
         if source == "Dataset":
-            day = st.date_input("Today is", min_value=first_day, max_value=last_day, key="day", format="DD/MM/YYYY")
+            day = st.date_input("Forecast for", min_value=first_day, max_value=last_day, key="day", format="DD/MM/YYYY")
+            read_to = day - ONE_DAY                                   # last day the AI reads
+            st.caption(f"Reads {read_to - 6 * ONE_DAY:%d %b} – {read_to:%d %b %Y}")
             st.pills("Jump to an example", list(EXAMPLES), key="example", on_change=use_example)
-            if test_start <= day <= test_end:
+            if day > test_end:
+                st.badge("Beyond the data: a real forecast", color="violet", icon=":material/auto_awesome:")
+            elif day >= test_start:
                 st.badge("Unseen test period", color="green", icon=":material/verified:")
             else:
                 st.badge("Training period", color="gray", icon=":material/history:")
-            window, actual = window_ending(df, day), actual_next(df, day)
+            window, actual = window_ending(df, read_to), actual_next(df, read_to)
         else:
             uploaded = st.file_uploader("7 consecutive days, one row per day", type="csv")
             st.download_button("Download a template", SAMPLE_CSV_PATH.read_bytes(), "floodsense_template.csv",
@@ -72,13 +80,13 @@ with right:
         st.info("Upload a CSV with 7 consecutive days to get tomorrow's forecast.", icon=":material/upload_file:")
         st.stop()
     try:
-        result = cached_predict(str(day)) if source == "Dataset" else system.predict_window(window)
+        result = cached_predict(str(read_to)) if source == "Dataset" else system.predict_window(window)
     except Exception as exc:
         st.error(str(exc), title="This data can't be used", icon=":material/block:")
         st.caption("FloodSense refuses incomplete or inconsistent data instead of guessing.")
         st.stop()
     window = system.validate_window(window)
-    feats, days = cached_explain(str(day)) if source == "Dataset" else impact_tables(system, window)
+    feats, days = cached_explain(str(read_to)) if source == "Dataset" else impact_tables(system, window)
     living_advisory(**advisory_props(result, df, window, actual,
                                      f"Forecast for {result['for_date']:%A %d %B %Y}",
                                      system.thresholds["sys"]), key="advisory")
@@ -87,7 +95,7 @@ reason_col, week_col = st.columns([1, 2.6], gap="large")
 with reason_col:
     reason_cards(drivers(feats, window, df), title="Why · biggest pushes", key="reasons")
 with week_col:
-    st.markdown("**The 7 days the AI read**")
+    st.markdown(f"**The 7 days the AI read** · up to the day before {result['for_date']:%d %b}")
     week_strip(week_days(window, df, system.flood_line), LEVELS[result["advisory"]]["hex"], key="week")
 
 why_tab, how_tab, trend_tab, data_tab = st.tabs(
@@ -96,7 +104,7 @@ why_tab, how_tab, trend_tab, data_tab = st.tabs(
 with why_tab:
     a, b = st.columns([1.4, 1], gap="large")
     with a:
-        st.markdown("**Which readings pushed tomorrow's risk**")
+        st.markdown("**Which readings pushed the forecast**")
         top = feats[feats["impact"].abs() >= 0.0005].head(8)   # hide readings that didn't move the score
         top = top if len(top) else feats.head(3)
         st.echarts_chart(ec_push_bars(top["name"].tolist(), (top["impact"] * 100).tolist(),
@@ -104,11 +112,11 @@ with why_tab:
     with b:
         st.markdown("**Which days mattered**")
         st.echarts_chart(ec_day_bars(days["day"].tolist(), (days["impact"] * 100).tolist()), height=280)
-    st.caption("Each bar: how much tomorrow's combined score changes if that reading (or day) is replaced by a typical value.")
+    st.caption("Each bar: how much the forecast score changes if that reading (or day) is replaced by a typical value.")
 with how_tab:
     a, b = st.columns(2, gap="large")
     with a:
-        st.markdown("**1 · Two AI models score tomorrow**")
+        st.markdown("**1 · Two AI models score the day**")
         model_scores(system, result)
     with b:
         st.markdown("**2 · Rules turn the score into an advisory**")

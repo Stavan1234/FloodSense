@@ -43,15 +43,15 @@ HELP = {
 
 LEVELS = {  # advisory → presentation; colour is never the only signal (icon + label too)
     "LOW RISK": {"label": "Low risk", "color": "green", "hex": "#1A9E5C", "icon": ":material/check_circle:",
-                 "meaning": "No flood expected tomorrow", "action": "Nothing to do."},
+                 "meaning": "No flood expected", "action": "Nothing to do."},
     "MONITOR": {"label": "Monitor", "color": "blue", "hex": "#0B6BCB", "icon": ":material/visibility:",
                 "meaning": "No flood expected, but something to watch", "action": "Check again tomorrow."},
     "FLOOD WATCH": {"label": "Flood watch", "color": "orange", "hex": "#E8820C", "icon": ":material/warning:",
-                    "meaning": "Flooding possible tomorrow", "action": "Be ready to act."},
+                    "meaning": "Flooding possible", "action": "Be ready to act."},
     "FLOOD WARNING": {"label": "Flood warning", "color": "red", "hex": "#D93A3A", "icon": ":material/flood:",
-                      "meaning": "Flood expected tomorrow", "action": "Act now."},
+                      "meaning": "Flood expected", "action": "Act now."},
 }
-TRIGGER_TEXT = {"flooded_today": "Flooded today", "near_line": "Water close to the flood line", "heavy_rain": "Heavy rain",
+TRIGGER_TEXT = {"flooded_today": "Already flooded", "near_line": "Water close to the flood line", "heavy_rain": "Heavy rain",
                 "wet_soil": "Very wet soil", "rapid_rise": "Water rising fast"}
 UP, DOWN, GREY = "#D93A3A", "#0B6BCB", "#8C9AAB"
 
@@ -139,12 +139,6 @@ def actual_next(df: pd.DataFrame, day) -> str | None:
     nxt = pd.Timestamp(day).date() + pd.Timedelta(days=1)
     row = df.loc[df["date"].dt.date == nxt, "flood_event"]
     return None if row.empty else ("Flood" if int(row.iloc[0]) == 1 else "No Flood")
-
-
-def test_period() -> tuple:
-    """First and last 'today' of the unseen test forecasts."""
-    p = load_predictions()
-    return p["today"].min().date(), p["today"].max().date()
 
 
 def wording(df: pd.DataFrame, feature: str, value: float) -> str:

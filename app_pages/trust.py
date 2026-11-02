@@ -50,19 +50,19 @@ with acc_tab:
             marker=dict(size=15, symbol=symbol.replace("-open", ""),   # hollow look, but still clickable
                         color="rgba(217,58,58,0.12)" if "open" in symbol else color,
                         line=dict(width=2.5 if "open" in symbol else 0, color=color)),
-            customdata=np.stack([part["today"].dt.strftime("%Y-%m-%d"), part["for"].dt.strftime("%d %b %Y")], axis=-1),
+            customdata=np.stack([part["for"].dt.strftime("%Y-%m-%d"), part["for"].dt.strftime("%d %b %Y")], axis=-1),
             hovertemplate="%{customdata[1]}<br>" + name + "<extra></extra>"))
     months = d.groupby(d["for"].dt.to_period("M"))["week"].min()
     fig.update_xaxes(tickvals=months.values, ticktext=[p.strftime("%b") for p in months.index], showgrid=False)
     fig.update_yaxes(tickvals=list(range(7)), ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
                      autorange="reversed", showgrid=False)
     fig = _style(fig, 300).update_layout(showlegend=True, legend=dict(orientation="h", y=-0.15), dragmode=False)
-    st.caption("Each square is one forecast day. **Click a day** to see the forecast made the day before.")
+    st.caption("Each square is one forecast day. **Click a day** to open its forecast in Check a day.")
     event = st.plotly_chart(fig, on_select="rerun", selection_mode="points", key="calendar",
                             config={"displayModeBar": False})
     points = event.selection.points if event and event.selection else []
     if points:
-        st.session_state.day = pd.Timestamp(points[0]["customdata"][0]).date()
+        st.session_state.day = pd.Timestamp(points[0]["customdata"][0]).date()   # the forecast day itself
         st.session_state.source = "Dataset"
         st.switch_page("app_pages/check_day.py")
     horizon = load_csv("horizon.csv")

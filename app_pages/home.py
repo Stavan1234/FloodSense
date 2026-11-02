@@ -43,7 +43,7 @@ with reasons:
 st.space("medium")
 steps = st.columns(3, gap="medium")
 for col, (icon, title, text) in zip(steps, [
-    (":material/calendar_month:", "1 · Pick a day", "Any day in the dataset as 'today', or upload your own 7 days."),
+    (":material/calendar_month:", "1 · Pick a day", "The day you want to know about, or upload your own 7 days."),
     (":material/neurology:", "2 · AI reads the week", "An LSTM and Gradient Boosting score tomorrow; simple rules decide the level."),
     (":material/assignment_turned_in:", "3 · Get the answer", "Tomorrow's risk level, what to do, and the reasons behind it."),
 ]):

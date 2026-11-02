@@ -96,25 +96,29 @@ class IntegratedFloodSystem:
 
     def frame(self, w: pd.DataFrame) -> pd.DataFrame:
         """Validated 7 days → per-day features (identical to ``window_frame`` in the notebook)."""
-        f = w[self.env_features].reset_index(drop=True).astype(float).copy()
+        env = w[self.env_features].to_numpy(float)
         doy = pd.to_datetime(w["date"]).dt.day_of_year.to_numpy()
-        f["day_of_year_sin"], f["day_of_year_cos"] = np.sin(2 * np.pi * doy / 365.25), np.cos(2 * np.pi * doy / 365.25)
-        wet = (f["water_area_km2"].to_numpy() >= self.flood_line).astype(int)
+        wet = env[:, self.env_features.index("water_area_km2")] >= self.flood_line
         fs, ds, a, b = [], [], 0, 0
         for x in wet:
             a, b = (a + 1, 0) if x else (0, b + 1)
             fs.append(a); ds.append(b)
-        f["flood_streak"], f["dry_streak"] = fs, ds
-        return f
+        extra = np.column_stack([np.sin(2 * np.pi * doy / 365.25), np.cos(2 * np.pi * doy / 365.25), fs, ds])
+        return pd.DataFrame(np.hstack([env, extra]),
+                            columns=[*self.env_features, "day_of_year_sin", "day_of_year_cos", "flood_streak", "dry_streak"])
 
     def flat(self, frame: pd.DataFrame) -> pd.Series:
+        """7 days × daily readings → one row named like ``water_area_km2@d-1`` (reading-major, oldest day first)."""
         n = self.window_days
-        return pd.Series({f"{c}@d{i - n + 1}": frame[c].iloc[i] for c in self.ml_daily for i in range(n)})
+        names = [f"{c}@d{i - n + 1}" for c in self.ml_daily for i in range(n)]
+        return pd.Series(frame[self.ml_daily].to_numpy(float).T.ravel(), index=names)
 
     # ------------------------------------------------------------------ models
     def score_frames(self, frames: list[pd.DataFrame]):
         """Per-day feature tables → (P(LSTM), P(ML), combined) for tomorrow."""
-        seq = np.stack([self.seq_scaler.transform(self.seq_imputer.transform(f[self.lstm_inputs])) for f in frames]).astype(np.float32)
+        k, n = len(frames), self.window_days
+        days = pd.DataFrame(np.concatenate([f[self.lstm_inputs].to_numpy(float) for f in frames]), columns=self.lstm_inputs)
+        seq = self.seq_scaler.transform(self.seq_imputer.transform(days)).reshape(k, n, -1).astype(np.float32)
         with torch.no_grad():
             p_dl = torch.sigmoid(self.encoder(torch.from_numpy(seq))).numpy()
         X = pd.DataFrame([self.flat(f) for f in frames])[self.selected]
@@ -169,10 +173,10 @@ class IntegratedFloodSystem:
             if c == "water_area_km2":                       # keep the derived change consistent
                 v["water_area_change"] = v["water_area_km2"].diff().fillna(0.0)
             variants.append(v); labels.append(("reading", c))
+        day_typical = [typical(c) for c in self.env_features]
         for d in range(self.window_days):
             v = w.copy()
-            for c in self.env_features:
-                v.loc[d, c] = typical(c)
+            v.loc[d, self.env_features] = day_typical
             variants.append(v); labels.append(("day", d))
         _, _, s = self.score_frames([self.frame(v) for v in variants])
         base = s[0]

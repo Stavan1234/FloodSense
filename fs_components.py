@@ -302,7 +302,7 @@ export default function (component) {
           <div class="bar" title="Soil wetness"><i style="--c:#A0703C;--h:${d.soil * 100}%"></i></div>
           <div class="bar" title="Water area"><i style="--c:#0B6BCB;--h:${d.water * 100}%"></i></div>
         </div>
-        ${d.target ? '<div class="tag">Today</div>' : ""}
+        ${d.target ? '<div class="tag">Last day read</div>' : ""}
       </div>`).join("") +
       '<div class="legend"><span style="--c:#4DA3FF">Rain</span><span style="--c:#A0703C">Soil wetness</span><span style="--c:#0B6BCB">Water area</span><span>tap a day for details</span></div>';
     detail.innerHTML = "";

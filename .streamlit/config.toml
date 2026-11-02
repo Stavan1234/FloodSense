@@ -1,8 +1,16 @@
-# "Monsoon" theme for the Practical 10 flood-risk website.
-# Light and dark modes are both defined, so the appearance toggle in Settings stays available.
+# FloodSense website settings. Light and dark themes are both defined, so the appearance toggle stays available.
 
 [client]
 toolbarMode = "minimal"
+
+[server]
+maxUploadSize = 2          # MB; the only upload is a 7-row CSV
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+magicEnabled = false       # pages never rely on bare expressions being rendered
 
 [theme]
 font = "'Plus Jakarta Sans':https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
