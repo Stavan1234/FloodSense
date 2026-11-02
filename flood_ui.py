@@ -4,6 +4,8 @@ Forecasts always come from ``IntegratedFloodSystem`` in ``system_core.py``, whic
 model trained in the notebook. The task: from the last 7 days, forecast a flood TOMORROW.
 """
 from pathlib import Path
+import functools
+import hashlib
 import json
 
 import numpy as np
@@ -61,43 +63,70 @@ def pct(x: float) -> str:
 # ---------------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------------
-@st.cache_data(show_spinner=False)
-def load_data() -> pd.DataFrame:
+def data_version() -> str:
+    """Fingerprint of the engine code, model files and site data. Every cache below is keyed on it, so a
+    redeploy with new files never serves results cached from the old ones (Streamlit Cloud keeps the process alive)."""
+    import system_core
+    files = [Path(system_core.__file__), *sorted(MODEL_DIR.glob("*")), *sorted(f for f in DATA_DIR.glob("*") if f.is_file())]
+    return _hash_files(tuple((str(f), f.stat().st_size, f.stat().st_mtime_ns) for f in files))   # cheap stat check
+
+
+@functools.lru_cache(maxsize=4)
+def _hash_files(stats: tuple) -> str:
+    """Hash the file contents; recomputed only when a file's size or modification time changes."""
+    h = hashlib.md5()
+    for path, _, _ in stats:
+        h.update(Path(path).name.encode())
+        h.update(Path(path).read_bytes())
+    return h.hexdigest()
+
+
+@st.cache_data(show_spinner=False, max_entries=1)
+def _read_data(version: str) -> pd.DataFrame:
     return pd.read_csv(DATA_DIR / "clean_dataset.csv", parse_dates=["date"])
 
 
-@st.cache_data(show_spinner=False)
-def load_predictions() -> pd.DataFrame:
+@st.cache_data(show_spinner=False, max_entries=1)
+def _read_predictions(version: str) -> pd.DataFrame:
     return pd.read_csv(DATA_DIR / "test_predictions.csv", parse_dates=["today", "for"])
 
 
-@st.cache_data(show_spinner=False)
-def load_summary() -> dict:
+@st.cache_data(show_spinner=False, max_entries=1)
+def _read_summary(version: str) -> dict:
     return json.loads((DATA_DIR / "summary.json").read_text(encoding="utf-8"))
 
 
-@st.cache_data(show_spinner=False)
-def load_csv(name: str) -> pd.DataFrame:
+@st.cache_data(show_spinner=False, max_entries=16)
+def _read_csv(name: str, version: str) -> pd.DataFrame:
     return pd.read_csv(DATA_DIR / name)
 
 
-def _engine_version() -> tuple:
-    """Changes whenever the engine code or model files change, so the cached model is rebuilt."""
-    import system_core
-    files = [Path(system_core.__file__), *sorted(MODEL_DIR.glob("*"))]
-    return tuple(f.stat().st_mtime_ns for f in files)
-
-
 @st.cache_resource(show_spinner="Loading the AI model…", max_entries=1)
-def _load_system(version: tuple) -> IntegratedFloodSystem:
+def _load_system(version: str) -> IntegratedFloodSystem:
     df = load_data()
     train_end = pd.Timestamp(load_summary()["splits"]["train"][1])
     typical = df[df["date"] <= train_end].median(numeric_only=True).to_dict()      # training medians, for explanations
     return IntegratedFloodSystem(MODEL_DIR, typical=typical)
 
 
+def load_data() -> pd.DataFrame:
+    return _read_data(data_version())
+
+
+def load_predictions() -> pd.DataFrame:
+    return _read_predictions(data_version())
+
+
+def load_summary() -> dict:
+    return _read_summary(data_version())
+
+
+def load_csv(name: str) -> pd.DataFrame:
+    return _read_csv(name, data_version())
+
+
 def load_system() -> IntegratedFloodSystem:
-    return _load_system(_engine_version())
+    return _load_system(data_version())
 
 
 def window_ending(df: pd.DataFrame, day, days: int = 7) -> pd.DataFrame:
@@ -138,8 +167,12 @@ def percentile(df: pd.DataFrame, feature: str, value: float) -> float:
 # Forecasts and explanations
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner=False, max_entries=512)
-def cached_predict(day_key: str) -> dict:
+def _predict(day_key: str, version: str) -> dict:
     return load_system().predict_window(window_ending(load_data(), day_key))
+
+
+def cached_predict(day_key: str) -> dict:
+    return _predict(day_key, data_version())
 
 
 def impact_tables(system: IntegratedFloodSystem, window: pd.DataFrame):
@@ -154,8 +187,12 @@ def impact_tables(system: IntegratedFloodSystem, window: pd.DataFrame):
 
 
 @st.cache_data(show_spinner=False, max_entries=512)
-def cached_explain(day_key: str) -> tuple:
+def _explain(day_key: str, version: str) -> tuple:
     return impact_tables(load_system(), window_ending(load_data(), day_key))
+
+
+def cached_explain(day_key: str) -> tuple:
+    return _explain(day_key, data_version())
 
 
 def drivers(feats: pd.DataFrame, window: pd.DataFrame, df: pd.DataFrame, n: int = 3) -> list[dict]:
@@ -238,8 +275,12 @@ def week_days(window: pd.DataFrame, df: pd.DataFrame, flood_line: float) -> list
 
 
 @st.cache_data(show_spinner=False, max_entries=64)
-def cached_trace(day_key: str) -> dict:
+def _trace(day_key: str, version: str) -> dict:
     return engine_trace(load_system(), window_ending(load_data(), day_key), cached_predict(day_key))
+
+
+def cached_trace(day_key: str) -> dict:
+    return _trace(day_key, data_version())
 
 
 def engine_trace(system: IntegratedFloodSystem, window: pd.DataFrame, result: dict) -> dict:
