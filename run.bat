@@ -8,5 +8,5 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo Starting FloodSense... your browser will open shortly. Press Ctrl+C to stop.
-".venv\Scripts\python.exe" -m streamlit run app.py
+".venv\Scripts\python.exe" -m streamlit run streamlit_app.py
 pause

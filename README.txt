@@ -3,7 +3,8 @@ Validation, Interpretation, Evaluation and Deployment Readiness
 
 PACKAGE CONTENTS
 - CIL_Practical_10_Validation_and_Deployment.ipynb : executable validation notebook
-- app.py : website entry point (FloodSense, multi-page Streamlit app)
+- streamlit_app.py : website entry point (FloodSense, multi-page Streamlit app)
+- app.py : ASGI wrapper (st.App) loaded by Vercel; vercel.json holds deployment settings
 - app_pages/ : one file per website page (Check a day, What-if lab, Test results, Why the AI decides,
   Input safety tests, Responsible AI, How it's built, Glossary & viva)
 - flood_ui.py : shared loading, occlusion-based explanations and plain-language helpers
@@ -25,7 +26,7 @@ RUN THE DEPLOYMENT DEMO LOCALLY
 1. Install Python 3.10+ (a compatible environment with PyTorch is recommended).
 2. Open a terminal in this extracted folder.
 3. Run: pip install -r requirements.txt
-4. Run: streamlit run app.py
+4. Run: streamlit run streamlit_app.py
 5. Use the included demo data or upload a CSV with exactly seven consecutive daily rows and the required environmental columns.
 
 IMPORTANT LIMITATIONS

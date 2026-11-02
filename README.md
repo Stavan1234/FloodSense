@@ -20,10 +20,26 @@ Run `setup.bat` again any time to reinstall or update packages.
 python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Requires Python 3.10+.
+
+## Deploy on Vercel
+
+The repo is ready for Vercel's Python runtime:
+
+- `app.py` exposes `app = st.App("streamlit_app.py")`, Streamlit's ASGI app, which Vercel loads as the function entrypoint. Vercel's Python functions support WebSockets, which Streamlit needs.
+- `requirements.txt` pulls **CPU-only PyTorch**, `.python-version` pins Python 3.12, and `vercel.json` sets `maxDuration` and excludes files the site doesn't need.
+
+Steps: import the GitHub repo in Vercel → leave the framework preset on **Other** → Deploy.
+
+If the build says the function is too large, add the environment variable `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` (Project → Settings → Environment Variables) and redeploy. PyTorch is big; Vercel's large-functions beta allows up to 5 GB.
+
+Notes:
+- On the Hobby plan a function (and so the live connection) runs for at most 5 minutes; after that the page reconnects automatically and may reset what you entered.
+- The first visit after idle time is slow (cold start loads PyTorch and the models).
+- [Streamlit Community Cloud](https://share.streamlit.io) is a simpler free alternative: point it at `streamlit_app.py`.
 
 ## What the website offers
 
@@ -56,7 +72,9 @@ Requires Python 3.10+.
 ## Project structure
 
 ```
-app.py                     Website entry point and navigation
+streamlit_app.py           Website entry point and navigation
+app.py                     ASGI wrapper loaded by Vercel (st.App)
+vercel.json                Vercel function settings
 app_pages/                 One file per page
 flood_ui.py                Shared loaders, occlusion explanations, UI helpers
 system_core.py             Input validation + integrated inference (Practical 9 pipeline)

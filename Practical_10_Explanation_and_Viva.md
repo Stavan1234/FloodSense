@@ -49,5 +49,5 @@ The included model performs **same-day classification using a seven-day input wi
 16. **Can this application be used by emergency services?**  No. It lacks independent domain validation, calibrated operational thresholds, expert review, and reliability testing on external data.
 17. **What does reproducibility mean?**  Repeating the same inference with the same valid input and saved artifacts produces the same output, within numerical tolerance.
 18. **Why test invalid inputs?**  To ensure the application fails clearly and safely instead of producing misleading predictions.
-19. **What files are needed to run the app?**  `app.py`, `system_core.py`, model artifacts, the demo dataset, and the required Python packages.
+19. **What files are needed to run the app?**  `streamlit_app.py`, `app_pages/`, `flood_ui.py`, `system_core.py`, model artifacts, the demo dataset, and the required Python packages.
 20. **What is the conclusion?**  The integrated system was checked using test results and input-validation cases, and exposed through a simple interface; its limitations are documented.
