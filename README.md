@@ -6,6 +6,12 @@ Computational Intelligence Laboratory, **Practical 10**: validation, interpretat
 
 > ⚠️ Educational prototype. Same-day classification on an educational dataset from a single location. **Not** for real emergency decisions.
 
+## Full notebook (Practicals 4–10)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Stavan1234/FloodSense/blob/main/CIL_Practicals_4_to_10_FloodSense.ipynb)
+
+`CIL_Practicals_4_to_10_FloodSense.ipynb` covers every task in one place: EDA and cleaning, feature engineering, ML models with SHAP, LSTM design and tuning, interpretability (permutation, ablation, activations, SHAP), DL→ML→AI integration, and validation/ethics/deployment. In Colab, just choose **Runtime → Run all**; the dataset is downloaded automatically and a full run takes about 3–5 minutes on CPU.
+
 ## Quick start
 
 **Windows:**
