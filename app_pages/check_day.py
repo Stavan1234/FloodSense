@@ -2,10 +2,11 @@ import pandas as pd
 import streamlit as st
 
 from flood_ui import (
-    FRIENDLY, SAMPLE_CSV_PATH, actual_label, advisory_banner, cached_explain, day_bars, decision_steps,
-    drivers, load_data, load_predictions, load_system, model_scores, risk_gauge, shap_bars, shap_tables,
-    show_drivers, test_period, week_chart, window_ending,
+    FRIENDLY, SAMPLE_CSV_PATH, actual_label, advisory_props, cached_explain, decision_steps, drivers,
+    ec_day_bars, ec_push_bars, ec_trends, load_data, load_predictions, load_system, model_scores,
+    shap_tables, test_period, week_days, window_ending, LEVELS,
 )
+from fs_components import living_advisory, reason_cards, week_strip
 
 system = load_system()
 df = load_data()
@@ -39,7 +40,7 @@ def use_example():
 st.title("Check a day", icon=":material/radar:")
 st.caption("Pick a day: FloodSense reads that day and the 6 before it, then tells you the flood risk and why.")
 
-left, right = st.columns([1, 2.3], gap="large")
+left, right = st.columns([1, 2.6], gap="large")
 
 with left:
     with st.container(border=True):
@@ -76,25 +77,29 @@ with right:
         st.stop()
     window = system.validate_window(window)
     feats, days = cached_explain(str(day)) if source == "Dataset" else shap_tables(system, window)
+    living_advisory(**advisory_props(result, df, window, actual, f"{result['date']:%A %d %B %Y}",
+                                   system.thresholds["sys"]), key="advisory")
 
-    advisory_banner(result, actual)
-    g, r = st.columns([1.1, 1], gap="medium", vertical_alignment="center")
-    g.plotly_chart(risk_gauge(result["score"], system.thresholds["sys"]), config={"displayModeBar": False})
-    with r:
-        show_drivers(drivers(feats, window, df))
+reason_col, week_col = st.columns([1, 2.6], gap="large")
+with reason_col:
+    reason_cards(drivers(feats, window, df), key="reasons")
+with week_col:
+    st.markdown("**The week the AI read**")
+    week_strip(week_days(window, df), LEVELS[result["advisory"]]["hex"], key="week")
 
-week_tab, why_tab, how_tab, data_tab = st.tabs(
-    [":material/show_chart: The week", ":material/psychology: Why", ":material/account_tree: How it decided",
+why_tab, how_tab, trend_tab, data_tab = st.tabs(
+    [":material/psychology: Why", ":material/account_tree: How it decided", ":material/show_chart: Trends",
      ":material/table: Numbers"])
-with week_tab:
-    st.plotly_chart(week_chart(window, system.rule_levels), config={"displayModeBar": False})
-    st.caption("Red dot = the day being checked · dotted line = warning level for that reading")
 with why_tab:
     a, b = st.columns([1.4, 1], gap="large")
-    a.markdown("**Which readings pushed the risk**")
-    a.plotly_chart(shap_bars(feats), config={"displayModeBar": False})
-    b.markdown("**Which days mattered**")
-    b.plotly_chart(day_bars(days), config={"displayModeBar": False})
+    with a:
+        st.markdown("**Which readings pushed the risk**")
+        top = feats.head(8)
+        st.echarts_chart(ec_push_bars(top["name"].tolist(), (top["shap"] * 100).tolist(),
+                                      "points · red raises, blue lowers"), height=320)
+    with b:
+        st.markdown("**Which days mattered**")
+        st.echarts_chart(ec_day_bars(days["day"].tolist(), (days["shap"] * 100).tolist()), height=280)
     st.caption("Measured with SHAP: each reading's share of the deep-learning model's flood probability.")
 with how_tab:
     a, b = st.columns(2, gap="large")
@@ -104,6 +109,9 @@ with how_tab:
     with b:
         st.markdown("**2 · Rules turn scores into an advisory**")
         decision_steps(system, result)
+with trend_tab:
+    st.echarts_chart(ec_trends(window, system.rule_levels), height=260)
+    st.caption("Red dot = the day being checked · dashed line = warning level for that reading")
 with data_tab:
     table = window[["date"] + list(system.env_features)].rename(columns=FRIENDLY)
     table["date"] = table["date"].dt.strftime("%a %d %b %Y")

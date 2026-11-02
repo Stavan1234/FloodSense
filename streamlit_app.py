@@ -6,6 +6,10 @@ import streamlit as st
 
 st.set_page_config(page_title="FloodSense", page_icon=":material/water_drop:", layout="wide")
 
+from flood_ui import global_style  # noqa: E402  (after set_page_config)
+
+global_style()
+
 page = st.navigation(
     [
         st.Page("app_pages/home.py", title="Home", icon=":material/home:", default=True),

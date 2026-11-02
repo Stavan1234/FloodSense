@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from plotly.subplots import make_subplots
 
 from system_core import ENVIRONMENTAL_FEATURES, IntegratedFloodSystem
 
@@ -157,15 +156,6 @@ def drivers(feats: pd.DataFrame, window: pd.DataFrame, df: pd.DataFrame, n: int 
     return out
 
 
-def show_drivers(items: list[dict]) -> None:
-    st.markdown("**Top reasons**")
-    for d in items:
-        arrow, color, effect = ("↑", "red", "raises risk") if d["up"] else ("↓", "blue", "lowers risk")
-        desc = f" · {d['desc']}" if d["desc"] else ""
-        st.markdown(f":{color}[**{arrow} {d['name']}**]{desc}  \n:gray[{effect} by {abs(d['points']):.0f} points]",
-                    help=d["help"] or None)
-
-
 # ---------------------------------------------------------------------------
 # Visual components
 # ---------------------------------------------------------------------------
@@ -176,79 +166,9 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
     return fig
 
 
-def risk_gauge(score: float, flood_line: float, title: str = "Flood score", height: int = 230) -> go.Figure:
-    color = LEVELS["FLOOD WARNING"]["hex"] if score >= 0.75 else LEVELS["FLOOD WATCH"]["hex"] if score >= flood_line else LEVELS["LOW RISK"]["hex"]
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number", value=score * 100, number={"suffix": "%", "valueformat": ".0f", "font": {"size": 30, "color": color}},
-        title={"text": title, "font": {"size": 14}},
-        gauge={"axis": {"range": [0, 100], "ticksuffix": "%", "tickvals": [0, 25, 50, 75, 100]},
-               "bar": {"color": color, "thickness": 0.28},
-               "steps": [{"range": [0, flood_line * 100], "color": "rgba(26,158,92,0.18)"},
-                         {"range": [flood_line * 100, 75], "color": "rgba(232,130,12,0.20)"},
-                         {"range": [75, 100], "color": "rgba(217,58,58,0.22)"}],
-               "threshold": {"line": {"color": "#7A5AF8", "width": 3}, "thickness": 0.9, "value": flood_line * 100}}))
-    return _style(fig, height).update_layout(margin=dict(l=25, r=25, t=50, b=5))
-
-
-def shap_bars(feats: pd.DataFrame, top: int = 8, height: int = 320) -> go.Figure:
-    d = feats.head(top).iloc[::-1]
-    fig = go.Figure(go.Bar(
-        x=d["shap"] * 100, y=d["name"], orientation="h", marker_color=np.where(d["shap"] > 0, UP, DOWN),
-        text=[f"{v:+.0f}" for v in d["shap"] * 100], textposition="outside", cliponaxis=False,
-        hovertemplate="%{y}: %{x:+.1f} points<extra></extra>"))
-    fig.update_xaxes(title="Push on flood score (points) · red raises, blue lowers", zeroline=True,
-                     zerolinecolor=GREY, zerolinewidth=1.5)
-    return _style(fig, height)
-
-
-def day_bars(days: pd.DataFrame, height: int = 260) -> go.Figure:
-    fig = go.Figure(go.Bar(x=days["day"], y=days["shap"] * 100, marker_color=np.where(days["shap"] > 0, UP, DOWN),
-                           hovertemplate="%{x}: %{y:+.1f} points<extra></extra>"))
-    fig.update_yaxes(title="Push (points)", zeroline=True, zerolinecolor=GREY)
-    return _style(fig, height)
-
-
-WEEK_FEATURES = ["precipitation", "soil_moisture", "water_area_km2", "water_area_change"]
-
-
-def week_chart(window: pd.DataFrame, rule_levels: dict, height: int = 230) -> go.Figure:
-    """Four small trend charts for the 7 days; the checked day is highlighted."""
-    lines = {"precipitation": rule_levels.get("heavy_rain"), "soil_moisture": rule_levels.get("wet_soil"),
-             "water_area_change": rule_levels.get("rapid_rise")}
-    fig = make_subplots(rows=1, cols=4, subplot_titles=[FRIENDLY[f] for f in WEEK_FEATURES], horizontal_spacing=0.06)
-    x = window["date"].dt.strftime("%a %d")
-    for c, f in enumerate(WEEK_FEATURES, start=1):
-        y = window[f]
-        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", line=dict(color=DOWN, width=2.5),
-                                 fill="tozeroy", fillcolor="rgba(11,107,203,0.10)",
-                                 hovertemplate="%{x}: %{y:.3~f}<extra></extra>"), 1, c)
-        fig.add_trace(go.Scatter(x=[x.iloc[-1]], y=[y.iloc[-1]], mode="markers",
-                                 marker=dict(size=11, color=UP, line=dict(color="white", width=2)),
-                                 hovertemplate="Checked day: %{y:.3~f}<extra></extra>"), 1, c)
-        if lines.get(f) is not None:
-            fig.add_hline(y=lines[f], line=dict(color=LEVELS["FLOOD WATCH"]["hex"], dash="dot", width=1.5), row=1, col=c)
-        fig.update_xaxes(showticklabels=False, row=1, col=c)
-    fig.update_annotations(font_size=12)
-    return _style(fig, height).update_layout(margin=dict(l=10, r=10, t=35, b=5))
-
-
 # ---------------------------------------------------------------------------
 # Result blocks
 # ---------------------------------------------------------------------------
-def advisory_banner(result: dict, actual: str | None = None) -> None:
-    lvl = LEVELS[result["advisory"]]
-    callout = getattr(st, lvl["callout"])
-    triggers = ", ".join(TRIGGER_TEXT[t] for t in result["triggers"])
-    body = f"**{lvl['meaning']}.** {lvl['action']}" + (f"  \nWarning signs: {triggers}" if triggers else "")
-    callout(body, title=f"{lvl['label']} · {pd.Timestamp(result['date']):%a %d %b %Y}", icon=lvl["icon"])
-    if actual is not None:
-        right = actual == result["prediction"]
-        if right:
-            st.badge(f"Correct · it really was {'a flood' if actual == 'Flood' else 'calm'}", color="green", icon=":material/task_alt:")
-        elif actual == "Flood":
-            st.badge("Missed · a flood really happened", color="red", icon=":material/cancel:")
-        else:
-            st.badge("False alarm · no flood happened", color="orange", icon=":material/notifications_off:")
 
 
 def model_scores(system: IntegratedFloodSystem, result: dict) -> None:
@@ -272,3 +192,142 @@ def decision_steps(system: IntegratedFloodSystem, result: dict) -> None:
             st.markdown(f":{lvl['color']}[{lvl['icon']} **{rule_id} · {lvl['label']}: fired**]  \n{text}")
         else:
             st.markdown(f":gray[:material/close: {rule_id} · {lvl['label']}: {text}, no]")
+
+
+# ---------------------------------------------------------------------------
+# Data for the animated components (fs_components.py)
+# ---------------------------------------------------------------------------
+LOCATION = (19.0, 73.0)   # the single monitored point in the dataset (lat, lon)
+
+
+def percentile(df: pd.DataFrame, feature: str, value: float) -> float:
+    return float((df[feature] < value).mean()) if pd.notna(value) else 0.0
+
+
+def advisory_props(result: dict, df: pd.DataFrame, window: pd.DataFrame, actual: str | None, eyebrow: str,
+                   flood_line: float) -> dict:
+    """Arguments for ``living_advisory``: verdict chip, warning-sign chips and rain intensity."""
+    verdict = None
+    if actual is not None:
+        if actual == result["prediction"]:
+            verdict = (f"✓ Correct · it really was {'a flood' if actual == 'Flood' else 'calm'}", "#1A9E5C")
+        elif actual == "Flood":
+            verdict = ("✗ Missed · a flood really happened", "#D93A3A")
+        else:
+            verdict = ("✗ False alarm · no flood happened", "#E8820C")
+    return {"result": result, "levels": LEVELS, "rain": percentile(df, "precipitation", window["precipitation"].iloc[-1]),
+            "eyebrow": eyebrow, "flood_line": flood_line, "verdict": verdict, "triggers": [TRIGGER_TEXT[t] for t in result["triggers"]]}
+
+
+def week_days(window: pd.DataFrame, df: pd.DataFrame) -> list[dict]:
+    """One tile per day for ``week_strip``: weather icon level and three mini bars (0–1)."""
+    days = []
+    for i, row in window.reset_index(drop=True).iterrows():
+        rain = percentile(df, "precipitation", row["precipitation"])
+        days.append({
+            "dow": row["date"].strftime("%a"), "date": row["date"].strftime("%d %b"), "target": i == len(window) - 1,
+            "rain_level": int(np.digitize(rain, [0.35, 0.6, 0.8, 0.93])), "rain": rain,
+            "soil": percentile(df, "soil_moisture", row["soil_moisture"]),
+            "water": percentile(df, "water_area_km2", row["water_area_km2"]),
+            "rows": [[f"{row['date']:%a %d %b}", ""]] + [
+                [FRIENDLY[f], f"{row[f]:,.3g} ({wording(df, f, row[f])})"]
+                for f in ["precipitation", "soil_moisture", "water_area_km2", "water_area_change", "temperature", "humidity"]],
+        })
+    return days
+
+
+def engine_trace(system: IntegratedFloodSystem, window: pd.DataFrame, result: dict) -> dict:
+    """Everything one day produces inside the engine, for the walkthrough animation."""
+    import torch
+    w = system.validate_window(window)
+    x = system.scale(w)
+    with torch.no_grad():
+        emb = system.encoder.embed(torch.from_numpy(x)[None]).numpy()[0]
+    votes = [int(t.predict_proba(emb[None])[0, 1] >= 0.5) for t in system.rf.estimators_]
+    lvl = LEVELS[result["advisory"]]
+    fired = [r[0] for r in system.rules].index(result["rule"])
+    n_flood = sum(votes)
+    captions = [
+        f"The week ending {result['date']:%d %b %Y}: 7 days × {x.shape[1]} readings, scaled so 0 means a typical day. "
+        "Red cells are above usual, blue below.",
+        "The LSTM reads one day at a time and carries a memory forward, so it notices patterns that build up over the week.",
+        f"After the last day, its memory is a summary of the whole week: {len(emb)} numbers. "
+        f"On its own, the LSTM says {result['p_dl']:.0%} chance of flood.",
+        f"The Random Forest's {len(votes)} trees each vote on that summary: {n_flood} say flood. "
+        f"Its probability is {result['p_ml']:.0%}.",
+        f"Combined score {result['score']:.0%} (flood line {system.thresholds['sys']:.0%}). "
+        f"Rules are checked top to bottom: {result['rule']} fires → {lvl['label']}.",
+    ]
+    return {"grid": np.clip(x, -3, 3).round(2).tolist(), "emb": (emb / (np.abs(emb).max() or 1)).round(3).tolist(),
+            "votes": votes, "p_dl": result["p_dl"], "p_ml": result["p_ml"], "score": result["score"],
+            "th": system.thresholds, "color": lvl["hex"], "label": lvl["label"], "fired": fired, "captions": captions,
+            "rules": [{"id": r[0], "label": LEVELS[r[1]]["label"], "color": LEVELS[r[1]]["hex"]} for r in system.rules]}
+
+
+# ---------------------------------------------------------------------------
+# ECharts specs (animated entrance, themed by Streamlit)
+# ---------------------------------------------------------------------------
+_ANIM = {"animationDuration": 900, "animationEasing": "cubicOut"}
+
+
+def ec_push_bars(names: list[str], values: list[float], axis_name: str) -> dict:
+    """Horizontal diverging bars: red raises risk, blue lowers it (values in points)."""
+    return {**_ANIM, "grid": {"left": 8, "right": 40, "top": 10, "bottom": 30, "containLabel": True},
+            "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+            "xAxis": {"type": "value", "name": axis_name, "nameLocation": "middle", "nameGap": 24},
+            "yAxis": {"type": "category", "data": names, "inverse": True, "axisTick": {"show": False}},
+            "series": [{"type": "bar", "barWidth": "60%",
+                        "label": {"show": True, "position": "right", "formatter": "{c}"},
+                        "data": [{"value": round(v, 1), "itemStyle": {"color": UP if v > 0 else DOWN, "borderRadius": 4}}
+                                 for v in values]}]}
+
+
+def ec_day_bars(labels: list[str], values: list[float]) -> dict:
+    return {**_ANIM, "grid": {"left": 8, "right": 8, "top": 16, "bottom": 8, "containLabel": True},
+            "tooltip": {"trigger": "axis"}, "xAxis": {"type": "category", "data": labels},
+            "yAxis": {"type": "value", "name": "points"},
+            "series": [{"type": "bar", "barWidth": "55%",
+                        "data": [{"value": round(v, 1), "itemStyle": {"color": UP if v > 0 else DOWN, "borderRadius": 4}}
+                                 for v in values]}]}
+
+
+def ec_trends(window: pd.DataFrame, rule_levels: dict) -> dict:
+    """Four small line charts for the week, with the warning level as a dashed line."""
+    feats = ["precipitation", "soil_moisture", "water_area_km2", "water_area_change"]
+    lines = {"precipitation": rule_levels["heavy_rain"], "soil_moisture": rule_levels["wet_soil"],
+             "water_area_change": rule_levels["rapid_rise"]}
+    x = window["date"].dt.strftime("%a").tolist()
+    grids, xs, ys, series, titles = [], [], [], [], []
+    for i, f in enumerate(feats):
+        left = f"{2 + i * 25}%"
+        grids.append({"left": left, "width": "21%", "top": 34, "bottom": 24, "containLabel": True})
+        titles.append({"text": FRIENDLY[f], "left": left, "top": 0, "textStyle": {"fontSize": 12}})
+        xs.append({"type": "category", "data": x, "gridIndex": i, "axisLabel": {"fontSize": 10}})
+        ys.append({"type": "value", "gridIndex": i, "scale": True, "axisLabel": {"fontSize": 10}})
+        s = {"type": "line", "xAxisIndex": i, "yAxisIndex": i, "smooth": 0.3, "symbolSize": 6, "data": window[f].round(4).tolist(),
+             "lineStyle": {"width": 2.5, "color": DOWN}, "itemStyle": {"color": DOWN},
+             "areaStyle": {"opacity": 0.12, "color": DOWN},
+             "markPoint": {"symbol": "circle", "symbolSize": 12, "itemStyle": {"color": UP},
+                           "data": [{"coord": [len(x) - 1, float(window[f].iloc[-1])]}], "label": {"show": False}}}
+        if f in lines:
+            s["markLine"] = {"symbol": "none", "silent": True, "label": {"show": False},
+                             "lineStyle": {"type": "dashed", "color": LEVELS["FLOOD WATCH"]["hex"]}, "data": [{"yAxis": lines[f]}]}
+        series.append(s)
+    return {**_ANIM, "title": titles, "grid": grids, "xAxis": xs, "yAxis": ys, "series": series, "tooltip": {"trigger": "axis"}}
+
+
+def global_style() -> None:
+    """Site-wide motion: content fades in, bordered cards lift on hover. Respects reduced motion."""
+    st.html("""<style>
+    [data-testid="stMainBlockContainer"] > div > [data-testid="stVerticalBlock"] > div {
+      animation: fs-rise .5s cubic-bezier(.2,.8,.2,1) both; }
+    [data-testid="stMainBlockContainer"] > div > [data-testid="stVerticalBlock"] > div:nth-child(2) { animation-delay: .05s; }
+    [data-testid="stMainBlockContainer"] > div > [data-testid="stVerticalBlock"] > div:nth-child(3) { animation-delay: .1s; }
+    [data-testid="stMainBlockContainer"] > div > [data-testid="stVerticalBlock"] > div:nth-child(n+4) { animation-delay: .15s; }
+    @keyframes fs-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    [data-testid="stVerticalBlockBorderWrapper"] { transition: transform .2s ease, box-shadow .2s ease; }
+    [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-2px);
+      box-shadow: 0 10px 30px -18px rgba(11,107,203,.55); }
+    [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    </style>""")

@@ -1,11 +1,8 @@
-import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
-from flood_ui import (
-    DOWN, LEVELS, UP, _style, load_data, load_system, risk_gauge, test_period, window_ending,
-)
+from flood_ui import LEVELS, advisory_props, ec_push_bars, load_data, load_system, test_period, window_ending
+from fs_components import living_advisory
 
 system = load_system()
 df = load_data()
@@ -98,16 +95,10 @@ after_window = edited_window(base, chosen["rain"], chosen["soil"], chosen["water
 after = system.predict_window(after_window)
 
 with results:
-    a, b = st.columns(2)
-    a.plotly_chart(risk_gauge(before["score"], system.thresholds["sys"], "Recorded week", 210),
-                   config={"displayModeBar": False})
-    b.plotly_chart(risk_gauge(after["score"], system.thresholds["sys"], "Your week", 210),
-                   config={"displayModeBar": False})
     lb, la = LEVELS[before["advisory"]], LEVELS[after["advisory"]]
-    with st.container(horizontal=True, horizontal_alignment="center", vertical_alignment="center"):
-        st.badge(lb["label"], color=lb["color"], icon=lb["icon"])
-        st.markdown(":material/arrow_forward:")
-        st.badge(la["label"], color=la["color"], icon=la["icon"])
+    living_advisory(**advisory_props(after, df, after_window, None,
+                                     f"Your week · recorded week was {lb['label']} at {before['score']:.0%}",
+                                     system.thresholds["sys"]), key="whatif_advisory")
     if st.session_state.get("wi_last") not in (None, after["advisory"]):   # only when the advisory just changed
         st.toast(f"Advisory now: {la['label']}", icon=la["icon"])
     st.session_state.wi_last = after["advisory"]
@@ -117,11 +108,6 @@ with results:
              "Soil wetness": edited_window(base, soil=chosen["soil"]),
              "Water area": edited_window(base, water=chosen["water"]),
              "Past week's rain": edited_window(base, week=week)}
-    effect = pd.Series({k: system.predict_window(w)["score"] - before["score"] for k, w in parts.items()}) * 100
-    fig = go.Figure(go.Bar(x=effect.values, y=effect.index, orientation="h",
-                           marker_color=np.where(effect.values > 0, UP, DOWN),
-                           text=[f"{v:+.0f}" for v in effect.values], textposition="outside", cliponaxis=False,
-                           hovertemplate="%{y}: %{x:+.1f} points<extra></extra>"))
-    fig.update_xaxes(title="Change in flood score on its own (points)", zeroline=True, zerolinecolor="#8C9AAB")
-    st.markdown("**What moved the risk**")
-    st.plotly_chart(_style(fig, 200), config={"displayModeBar": False})
+    effect = {k: (system.predict_window(w)["score"] - before["score"]) * 100 for k, w in parts.items()}
+    st.markdown("**What moved the risk** · each change on its own")
+    st.echarts_chart(ec_push_bars(list(effect), list(effect.values()), "change in flood score (points)"), height=220)

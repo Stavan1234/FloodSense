@@ -1,6 +1,7 @@
 import streamlit as st
 
-from flood_ui import LEVELS, load_summary, load_system
+from flood_ui import LEVELS, engine_trace, load_data, load_predictions, load_summary, load_system, window_ending
+from fs_components import engine_walkthrough
 
 system = load_system()
 summary = load_summary()
@@ -38,27 +39,18 @@ DEFS = ('<defs><marker id="fs-arrow" viewBox="0 0 10 10" refX="9" refY="5" marke
 st.title("How it works", icon=":material/account_tree:")
 st.caption("Three kinds of AI, one after another: deep learning reads the week, machine learning scores it, rules decide.")
 
-# ---------------------------------------------------------------- pipeline
+# ---------------------------------------------------------------- live walkthrough
 blue, green, purple, orange, grey, red = "#0B6BCB", "#1A9E5C", "#7A5AF8", "#E8820C", "#8C9AAB", "#D93A3A"
-w, y, h, gap = 132, 40, 92, 62
-xs = [10 + i * (w + gap) for i in range(7)]
-pipeline = (
-    f'<svg class="fs-svg" viewBox="0 0 {xs[-1] + w + 10} 190">{DEFS}'
-    + box(xs[0], y, w, h, grey, "7 days", f"{len(system.env_features)} readings each")
-    + box(xs[1], y, w, h, grey, "Check & prepare", "fill gaps · scale")
-    + box(xs[2], y, w, h, blue, "LSTM", "deep learning", "reads day by day")
-    + box(xs[3], y, w, h, green, "Random Forest", "machine learning", f"{TREES} trees")
-    + box(xs[4], y, w, h, purple, "Combine", "50 % + 50 %")
-    + box(xs[5], y, w, h, orange, "Rules", "4 IF–THEN")
-    + box(xs[6], y, w, h, red, "Advisory", "+ reasons")
-    + "".join(arrow(xs[i] + w + 4, y + h / 2, xs[i + 1] - 6, y + h / 2, label)
-              for i, label in enumerate(["", f"{DAYS}×{N_FEAT}", f"{H} numbers", "P(flood)", "score", ""]))
-    + f'<path class="fs-flow" d="M{xs[2] + w / 2},{y + h} C{xs[2] + w / 2},{y + h + 50} {xs[4] + w / 2},{y + h + 50} {xs[4] + w / 2},{y + h + 4}" '
-      f'fill="none" stroke="{blue}" stroke-width="2.5" marker-end="url(#fs-arrow)"/>'
-    + f'<text x="{(xs[2] + xs[4]) / 2 + w / 2}" y="{y + h + 48}" text-anchor="middle" font-size="11" font-weight="600" opacity=".7">LSTM\'s own P(flood)</text>'
-    + "</svg>"
-)
-st.markdown(STYLE + pipeline, unsafe_allow_html=True)
+df, preds = load_data(), load_predictions()
+CASES = {"A flood it caught": (preds.Actual == "Flood") & (preds.Prediction == "Flood"),
+         "A calm day": (preds.Actual == "No Flood") & (preds.Advisory == "LOW RISK"),
+         "A flood it missed": (preds.Actual == "Flood") & (preds.Prediction == "No Flood")}
+case = st.segmented_control("Follow one real day through the engine", list(CASES), default="A flood it caught",
+                            required=True, key="engine_case")
+rows = preds[CASES[case]]
+day = rows.loc[rows["Combined"].sub(rows["Combined"].median()).abs().idxmin(), "date"].date()
+win = window_ending(df, day)
+engine_walkthrough(engine_trace(system, win, system.predict_window(win)), key="engine")
 
 # ---------------------------------------------------------------- engine cards
 cards = st.columns(3, gap="medium")

@@ -47,10 +47,10 @@ Every push to `main` redeploys automatically. Apps with no visitors for a while 
 
 | Page | What you can do |
 |---|---|
-| Home | One-sentence intro, a live result for the latest day, key numbers |
-| Check a day | Pick a day (or upload 7 days) → instant risk level, gauge, top reasons, SHAP chart and the rule that fired |
-| What-if lab | One-click scenarios (Cloudburst, Dry spell, River swelling) and sliders with plain labels; see the risk move |
-| How it works | Animated pipeline and LSTM diagrams, the three engines, the four rules |
+| Home | Interactive 3D globe (NASA imagery, day/night) pinned at the monitored point, the living advisory for the latest day, numbers that count up |
+| Check a day | Pick a day (or upload 7 days) → a living advisory card whose rain, clouds and water level follow the model, animated reasons, a 7-day weather strip, SHAP charts and the rule that fired |
+| What-if lab | One-click scenarios and plain-language sliders; the living advisory card turns stormy or calm as you change the weather |
+| How it works | Press Play to follow one real day through the engine: readings → LSTM → 32-number summary → 250 tree votes → rules |
 | Can I trust it? | Calendar of all 204 unseen days (click to open one), performance over time, what it looks at, safety checks, limits |
 
 ## How it works
@@ -74,7 +74,8 @@ The website loads exactly the model trained in the notebook (`model_artifacts/`,
 ```
 streamlit_app.py           Website entry point and top navigation
 app_pages/                 home · check_day · what_if · how_it_works · trust
-flood_ui.py                Shared loaders, SHAP explanations, Plotly components
+flood_ui.py                Shared loaders, SHAP explanations, ECharts specs
+fs_components.py           Animated components (living advisory, week strip, engine walkthrough, globe)
 system_core.py             The notebook's pipeline: validation, LSTM, Random Forest, rules, SHAP
 model_artifacts/           Trained LSTM + Random Forest + preprocessing (exported by the notebook)
 site_data/                 Clean dataset and evaluation results (exported by the notebook)

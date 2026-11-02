@@ -3,7 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from flood_ui import DOWN, FRIENDLY, GREY, UP, _style, load_csv, load_predictions, load_summary, load_system
+from flood_ui import DOWN, FRIENDLY, GREY, LEVELS, UP, _ANIM, _style, ec_day_bars, load_csv, load_predictions, load_summary, load_system
+from fs_components import count_up_kpis
 
 system = load_system()
 preds = load_predictions()
@@ -30,11 +31,14 @@ acc_tab, time_tab, look_tab, safe_tab, limit_tab = st.tabs(
 
 with acc_tab:
     st.markdown(f"#### It caught **{c['tp']} of {c['tp'] + c['fn']}** floods, with **{c['fp']}** false alarms.")
-    with st.container(horizontal=True):
-        st.metric("Days judged correctly", f"{m['Accuracy']:.0%}", border=True, help="Accuracy: share of all days right.")
-        st.metric("Floods caught", f"{m['Recall']:.0%}", border=True, help="Recall: share of real floods flagged.")
-        st.metric("Flood alerts that were real", f"{m['Precision']:.0%}", border=True,
-                  help="Precision: share of flood alerts where a flood really happened.")
+    count_up_kpis([
+        {"label": "Days judged correctly", "value": m["Accuracy"] * 100, "suffix": "%", "color": LEVELS["LOW RISK"]["hex"],
+         "help": "Accuracy: share of all days right"},
+        {"label": "Floods caught", "value": m["Recall"] * 100, "suffix": "%", "color": LEVELS["FLOOD WARNING"]["hex"],
+         "help": "Recall: share of real floods flagged"},
+        {"label": "Flood alerts that were real", "value": m["Precision"] * 100, "suffix": "%", "color": LEVELS["MONITOR"]["hex"],
+         "help": "Precision: alerts where a flood really happened"},
+    ], key="trust_kpis")
     d = preds.copy()
     d["week"] = ((d["date"] - d["date"].min()).dt.days + d["date"].min().day_of_week) // 7
     d["weekday"] = d["date"].dt.day_of_week
@@ -67,56 +71,68 @@ with time_tab:
     weakest = monthly.loc[monthly["Recall"].idxmin()]
     st.markdown(f"#### Steady across the season; weakest in **{pd.Period(weakest['month']):%B}** "
                 f"({weakest['Recall']:.0%} of floods caught).")
-    fig = go.Figure(go.Scatter(x=preds["date"], y=preds["Combined"] * 100, mode="lines", line=dict(color=GREY, width=1.2),
-                               hovertemplate="%{x|%d %b}: %{y:.0f}%<extra></extra>", name="Flood score"))
+    dates = preds["date"].dt.strftime("%Y-%m-%d").tolist()
+    marks = []
     for name in ["Caught flood", "Missed flood", "False alarm"]:
         color, symbol = OUTCOMES[name]
         part = preds[preds.Outcome == name]
-        fig.add_trace(go.Scatter(x=part["date"], y=part["Combined"] * 100, mode="markers", name=name,
-                                 marker=dict(size=9, color=color, symbol=symbol, line=dict(width=2, color=color)),
-                                 hovertemplate="%{x|%d %b}: %{y:.0f}%<extra>" + name + "</extra>"))
-    fig.add_hline(y=system.thresholds["sys"] * 100, line=dict(color="#7A5AF8", dash="dash"),
-                  annotation_text="flood line", annotation_position="top left")
-    fig.update_yaxes(title="Flood score (%)", range=[-3, 103])
-    st.plotly_chart(_style(fig, 320).update_layout(showlegend=True, legend=dict(orientation="h", y=1.12)),
-                    config={"displayModeBar": False})
-    bars = go.Figure([go.Bar(x=[pd.Period(p).strftime("%b") for p in monthly["month"]], y=monthly["Recall"] * 100,
-                             name="Floods caught", marker_color=UP),
-                      go.Bar(x=[pd.Period(p).strftime("%b") for p in monthly["month"]], y=monthly["Precision"] * 100,
-                             name="Alerts that were real", marker_color=DOWN)])
-    bars.update_yaxes(title="%", range=[0, 105])
-    st.plotly_chart(_style(bars, 240).update_layout(showlegend=True, legend=dict(orientation="h", y=1.15), barmode="group"),
-                    config={"displayModeBar": False})
+        marks.append({"type": "scatter", "name": name, "symbolSize": 10,
+                      "symbol": {"square": "rect", "square-open": "emptyRect", "diamond": "diamond"}[symbol],
+                      "itemStyle": {"color": color},
+                      "data": [[dt, round(v * 100, 1)] for dt, v in zip(part["date"].dt.strftime("%Y-%m-%d"), part["Combined"])]})
+    st.echarts_chart({
+        **_ANIM, "tooltip": {"trigger": "axis"}, "legend": {"top": 0},
+        "grid": {"left": 8, "right": 16, "top": 40, "bottom": 50, "containLabel": True},
+        "xAxis": {"type": "time"}, "yAxis": {"type": "value", "name": "Flood score %", "min": 0, "max": 100},
+        "dataZoom": [{"type": "inside"}, {"type": "slider", "height": 18, "bottom": 8}],
+        "series": [{"type": "line", "name": "Flood score", "showSymbol": False, "lineStyle": {"width": 1.2, "color": GREY},
+                    "areaStyle": {"opacity": 0.08}, "data": [[dt, round(v * 100, 1)] for dt, v in zip(dates, preds["Combined"])],
+                    "markLine": {"symbol": "none", "silent": True, "lineStyle": {"type": "dashed", "color": "#7A5AF8"},
+                                 "label": {"formatter": "flood line"}, "data": [{"yAxis": system.thresholds["sys"] * 100}]}}]
+                  + marks}, height=340)
+    names = [pd.Period(p).strftime("%b") for p in monthly["month"]]
+    st.echarts_chart({
+        **_ANIM, "tooltip": {"trigger": "axis"}, "legend": {"top": 0},
+        "grid": {"left": 8, "right": 8, "top": 36, "bottom": 8, "containLabel": True},
+        "xAxis": {"type": "category", "data": names}, "yAxis": {"type": "value", "max": 100, "name": "%"},
+        "series": [{"type": "bar", "name": "Floods caught", "itemStyle": {"color": UP, "borderRadius": 4},
+                    "data": (monthly["Recall"] * 100).round(0).tolist()},
+                   {"type": "bar", "name": "Alerts that were real", "itemStyle": {"color": DOWN, "borderRadius": 4},
+                    "data": (monthly["Precision"] * 100).round(0).tolist()}]}, height=260)
 
 with look_tab:
     feats = load_csv("shap_features.csv").set_index("feature")["mean_abs_shap"]
     feats["season"] = feats.pop("day_of_year_sin") + feats.pop("day_of_year_cos")
-    feats = feats.sort_values()
-    top2 = [FRIENDLY[f] for f in feats.index[::-1][:2]]
+    feats = feats.sort_values(ascending=False)
+    top2 = [FRIENDLY[f] for f in feats.index[:2]]
     st.markdown(f"#### Most decisions are driven by **{top2[0].lower()}** and **{top2[1].lower()}**.")
-    fig = go.Figure(go.Bar(x=feats.values * 100, y=[FRIENDLY[f] for f in feats.index], orientation="h",
-                           marker_color=[UP if i >= len(feats) - 2 else GREY for i in range(len(feats))],
-                           hovertemplate="%{y}: %{x:.1f} points on average<extra></extra>"))
-    fig.update_xaxes(title="Average push on the flood score (points) · SHAP")
     a, b = st.columns([1.5, 1], gap="large")
-    a.plotly_chart(_style(fig, 400), config={"displayModeBar": False})
-    days = load_csv("shap_days.csv")
-    fig = go.Figure(go.Bar(x=days["day"].str.replace("Day ", ""), y=days["mean_abs_shap"] * 100,
-                           marker_color=[DOWN] * (len(days) - 1) + [UP]))
-    fig.update_yaxes(title="Average push (points)")
+    with a:
+        st.echarts_chart({
+            **_ANIM, "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+            "grid": {"left": 8, "right": 30, "top": 8, "bottom": 30, "containLabel": True},
+            "xAxis": {"type": "value", "name": "average push (points) · SHAP", "nameLocation": "middle", "nameGap": 24},
+            "yAxis": {"type": "category", "inverse": True, "data": [FRIENDLY[f] for f in feats.index], "axisTick": {"show": False}},
+            "series": [{"type": "bar", "barWidth": "60%", "data": [
+                {"value": round(v * 100, 1), "itemStyle": {"color": UP if i < 2 else GREY, "borderRadius": 4}}
+                for i, v in enumerate(feats.values)]}]}, height=420)
     with b:
+        days = load_csv("shap_days.csv")
         st.markdown("**Which day of the week matters**")
-        st.plotly_chart(_style(fig, 260), config={"displayModeBar": False})
+        st.echarts_chart(ec_day_bars(days["day"].str.replace("Day ", "").tolist(), (days["mean_abs_shap"] * 100).tolist()),
+                         height=280)
         st.caption("The checked day itself carries most of the weight; earlier days add context.")
 
 with safe_tab:
     tests = load_csv("robustness_tests.csv")
     passed = int((tests["Result"] == "PASS").sum())
     st.markdown(f"#### It refuses broken input instead of guessing: **{passed} of {len(tests)}** checks passed.")
-    for _, t in tests.iterrows():
+    cols = st.columns(2, gap="medium")
+    for i, t in tests.reset_index(drop=True).iterrows():
         ok = t["Result"] == "PASS"
-        st.markdown(f"{':green[:material/check_circle:]' if ok else ':red[:material/cancel:]'} **{t['Test']}** "
-                    f":gray[· {t['Outcome']}]")
+        with cols[i % 2].container(border=True):
+            st.markdown(f"{':green[:material/check_circle:]' if ok else ':red[:material/cancel:]'} **{t['Test']}**  \n"
+                        f":gray[{t['Outcome']}]")
 
 with limit_tab:
     st.markdown("#### A strong classroom prototype, **not** a real warning service.")

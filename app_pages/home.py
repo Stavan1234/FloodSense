@@ -1,16 +1,25 @@
+from datetime import datetime, timezone
+
 import streamlit as st
 
 from flood_ui import (
-    LEVELS, actual_label, advisory_banner, cached_explain, drivers, load_data, load_summary, load_system,
-    risk_gauge, show_drivers, window_ending,
+    LEVELS, LOCATION, actual_label, advisory_props, cached_explain, drivers, load_data, load_summary,
+    load_system, window_ending,
 )
+from fs_components import count_up_kpis, globe, living_advisory, reason_cards
 
 system = load_system()
 df = load_data()
 summary = load_summary()
-c = summary["confusion"]
+c, m = summary["confusion"], summary["metrics"]
 
-hero, demo = st.columns([1, 1.15], gap="large", vertical_alignment="center")
+latest = df["date"].iloc[-1].date()
+window = window_ending(df, latest)
+result = system.predict_window(window)
+feats, _ = cached_explain(str(latest))
+lvl = LEVELS[result["advisory"]]
+
+hero, earth = st.columns([1, 1.2], gap="large", vertical_alignment="center")
 with hero:
     st.markdown("# :material/water_drop: FloodSense")
     st.markdown("### Is today a flood day? FloodSense reads a week of weather and satellite data, "
@@ -20,18 +29,20 @@ with hero:
             st.switch_page("app_pages/check_day.py")
         if st.button("Try the What-if lab", icon=":material/tune:"):
             st.switch_page("app_pages/what_if.py")
+with earth:
+    now = datetime.now(timezone.utc)
+    when = datetime(latest.year, latest.month, latest.day, now.hour, now.minute, tzinfo=timezone.utc)
+    globe(*LOCATION, color=lvl["hex"], badge=f"{lvl['label']} · {latest:%d %b %Y}",
+          when_iso=when.isoformat(), note=f"Monitored point {LOCATION[0]:.0f}°N {LOCATION[1]:.0f}°E · "
+          f"daylight shown for {latest:%d %b}, {when:%H:%M} UTC", key="globe")
 
-with demo, st.container(border=True):
-    latest = df["date"].iloc[-1].date()
-    window = window_ending(df, latest)
-    result = system.predict_window(window)
-    feats, _ = cached_explain(str(latest))
-    st.caption(":material/bolt: Live result · latest day in the data")
-    advisory_banner(result, actual_label(df, latest))
-    g, r = st.columns([1.1, 1], vertical_alignment="center")
-    g.plotly_chart(risk_gauge(result["score"], system.thresholds["sys"], height=200), config={"displayModeBar": False})
-    with r:
-        show_drivers(drivers(feats, window, df, n=2))
+st.space("small")
+card, reasons = st.columns([2.2, 1], gap="large")
+with card:
+    living_advisory(**advisory_props(result, df, window, actual_label(df, latest), f"Live · latest day in the data · {latest:%d %b %Y}",
+                                     system.thresholds["sys"]), key="home_advisory")
+with reasons:
+    reason_cards(drivers(feats, window, df), key="home_reasons")
 
 st.space("medium")
 steps = st.columns(3, gap="medium")
@@ -46,17 +57,15 @@ for col, (icon, title, text) in zip(steps, [
 
 st.space("small")
 st.markdown("**Tested on 204 days it had never seen**")
-with st.container(horizontal=True):
-    st.metric("Floods caught", f"{c['tp']} of {c['tp'] + c['fn']}", border=True,
-              help="Real floods that FloodSense flagged.")
-    st.metric("Days judged correctly", f"{summary['metrics']['Accuracy']:.0%}", border=True,
-              help="Flood and non-flood days combined.")
-    st.metric("False alarms", c["fp"], border=True, help="Days flagged as flood when none happened.")
+count_up_kpis([
+    {"label": "Floods caught", "value": c["tp"], "suffix": f" / {c['tp'] + c['fn']}", "color": LEVELS["FLOOD WARNING"]["hex"],
+     "help": "Real floods FloodSense flagged"},
+    {"label": "Days judged correctly", "value": m["Accuracy"] * 100, "suffix": "%", "color": LEVELS["LOW RISK"]["hex"],
+     "help": "Flood and non-flood days combined"},
+    {"label": "False alarms", "value": c["fp"], "color": LEVELS["FLOOD WATCH"]["hex"],
+     "help": "Flagged as flood when none happened"},
+    {"label": "Answer time", "value": 0.1, "decimals": 1, "prefix": "~", "suffix": " s", "color": LEVELS["MONITOR"]["hex"],
+     "help": "Prediction plus explanation"},
+], key="home_kpis")
 if st.button("See how far you can trust it", icon=":material/verified_user:", type="tertiary"):
     st.switch_page("app_pages/trust.py")
-
-st.space("small")
-st.markdown("**The four risk levels**")
-with st.container(horizontal=True):
-    for lvl in LEVELS.values():
-        st.badge(f"{lvl['label']}: {lvl['action']}", color=lvl["color"], icon=lvl["icon"])
