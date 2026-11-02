@@ -1,8 +1,0 @@
-Deployment check,Status
-Saved LSTM weights exist,PASS
-Saved ML/preprocessing bundle exists,PASS
-Feature metadata and thresholds exist,PASS
-Streamlit app source exists,PASS
-Inference core exists,PASS
-Environment requirements documented,PASS
-External operational validation,NOT DONE

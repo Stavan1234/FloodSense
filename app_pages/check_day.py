@@ -97,9 +97,10 @@ with why_tab:
     a, b = st.columns([1.4, 1], gap="large")
     with a:
         st.markdown("**Which readings pushed tomorrow's risk**")
-        top = feats.head(8)
+        top = feats[feats["impact"].abs() >= 0.0005].head(8)   # hide readings that didn't move the score
+        top = top if len(top) else feats.head(3)
         st.echarts_chart(ec_push_bars(top["name"].tolist(), (top["impact"] * 100).tolist(),
-                                      "points · red raises, blue lowers"), height=320)
+                                      "points · red raises, blue lowers"), height=90 + 34 * len(top))
     with b:
         st.markdown("**Which days mattered**")
         st.echarts_chart(ec_day_bars(days["day"].tolist(), (days["impact"] * 100).tolist()), height=280)

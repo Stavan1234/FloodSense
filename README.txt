@@ -1,10 +1,10 @@
 COMPUTATIONAL INTELLIGENCE LABORATORY - PRACTICALS 4 TO 10
-FloodSense: next-day flood early warning for Sindh, Pakistan (26.25N, 68E)
+FloodSense: next-day flood early warning for one monitored point (26.25N, 68E)
 
 PACKAGE CONTENTS
 - CIL_Practicals_4_to_10_FloodSense.ipynb : full notebook (Tasks 4-10); its export cell writes
   model_artifacts/ and site_data/, which the website loads
-- input_data/flood_dataset.csv : the original Pakistan flood dataset (2022-2024)
+- input_data/flood_dataset.csv : the daily flood dataset (2022-2024)
 - streamlit_app.py : website entry point (FloodSense, top navigation)
 - app_pages/ : Home, Check a day, What-if lab, How it works, Can I trust it?
 - flood_ui.py, fs_components.py : shared loading, explanations, charts and animated components
@@ -13,11 +13,6 @@ PACKAGE CONTENTS
 - site_data/ : merged dataset and evaluation results exported by the notebook
 - sample_7_day_input.csv : the last 7 days of the dataset, a template for uploads
 - requirements.txt, setup.bat, run.bat : install and run
-
-OLDER FILES (superseded)
-- CIL_Practical_10_Validation_and_Deployment.ipynb, practical10_results/, task9_component_metrics.csv,
-  validation_data_task9_predictions.csv, Practical_10_Explanation_and_Viva.md come from the earlier
-  package that used a modified copy of the dataset. The combined notebook above replaces them.
 
 RUN THE NOTEBOOK
 1. Open CIL_Practicals_4_to_10_FloodSense.ipynb in Google Colab (or Jupyter).

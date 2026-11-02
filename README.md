@@ -1,14 +1,14 @@
 # FloodSense
 
-**Will it flood tomorrow?** FloodSense reads the last 7 days of satellite water-area and weather data for one point in **Sindh, Pakistan (26.25°N, 68°E)**, forecasts tomorrow's flood risk, and shows why. Deep learning (LSTM) + machine learning (Gradient Boosting) → transparent rules.
+**Will it flood tomorrow?** FloodSense reads the last 7 days of satellite water-area and weather data for one monitored point (26.25°N, 68°E), forecasts tomorrow's flood risk, and shows why. Deep learning (LSTM) + machine learning (Gradient Boosting) → transparent rules.
 
 Computational Intelligence Laboratory, Practicals 4–10: from data cleaning to a validated, explained and deployed intelligent system.
 
-> ⚠️ Educational prototype trained on one location's public data. **Not** an official flood warning service.
+> ⚠️ Educational prototype trained on one location's data. **Not** an official flood warning service.
 
 ## The data, and why it forecasts tomorrow
 
-- `input_data/flood_dataset.csv` is the original Pakistan flood dataset (daily, 2022-01-01 → 2024-12-30, ERA5 weather + satellite water area).
+- `input_data/flood_dataset.csv`: daily data, 2022-01-01 → 2024-12-30 (ERA5 weather + satellite water area + flood label).
 - Some days have **two satellite passes** (two rows with the same weather but different water readings). They are merged into one row per day (larger water area), giving 1,095 days, 32.5 % of them flood days.
 - `days_since_last_flood` gives the answer away (it is 0 on flood days), so it is dropped.
 - A day is labelled *flood* exactly when the satellite sees **≥ 766 km² of water**. Classifying *today* would just mean reading that number. So FloodSense answers the useful question: **will the water cross the line tomorrow?**

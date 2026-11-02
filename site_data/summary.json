@@ -1,5 +1,5 @@
 {
-  "location": "Sindh, Pakistan (26.25\u00b0N, 68\u00b0E)",
+  "location": "26.25°N, 68°E",
   "splits": {
     "train": [
       "2022-01-08",
@@ -28,7 +28,7 @@
     "fp": 0,
     "tn": 125
   },
-  "lstm_config": "LSTM 32 units \u00b7 dropout 0.2",
+  "lstm_config": "LSTM 32 units · dropout 0.2",
   "ml_model": "Gradient Boosting",
   "w_dl": 0.2,
   "flood_line": 766.20301025,

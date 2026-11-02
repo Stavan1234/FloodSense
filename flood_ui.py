@@ -17,8 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "model_artifacts"
 DATA_DIR = BASE_DIR / "site_data"
 SAMPLE_CSV_PATH = BASE_DIR / "sample_7_day_input.csv"
-LOCATION = (26.25, 68.0)          # the monitored point: Sindh, Pakistan (Indus plain)
-PLACE = "Sindh, Pakistan"
+LOCATION = (26.25, 68.0)          # the monitored point
 
 # ---------------------------------------------------------------------------
 # Vocabulary
@@ -160,12 +159,19 @@ def cached_explain(day_key: str) -> tuple:
 
 
 def drivers(feats: pd.DataFrame, window: pd.DataFrame, df: pd.DataFrame, n: int = 3) -> list[dict]:
-    last = window.iloc[-1]
+    last, line = window.iloc[-1], load_system().flood_line
+    strong = feats[feats["impact"].abs() >= 0.005]          # skip pushes under half a point: noise, not a reason
     out = []
-    for _, r in feats.head(n).iterrows():
+    for _, r in (strong if len(strong) else feats).head(n).iterrows():
         f = r["feature"]
-        out.append({"name": r["name"], "desc": f"today {wording(df, f, last[f])}" if f in window.columns else "",
-                    "up": r["impact"] > 0, "points": r["impact"] * 100, "help": HELP.get(f, "")})
+        if f == "water_area_km2":
+            desc = f"today {last[f]:,.0f} km² · flood line {line:,.0f}"
+        elif f == "water_area_change":
+            desc = f"today {last[f]:+,.0f} km² since yesterday"
+        else:
+            desc = f"today {wording(df, f, last[f])}" if f in window.columns else ""
+        out.append({"name": r["name"], "desc": desc, "up": r["impact"] > 0, "points": r["impact"] * 100,
+                    "help": HELP.get(f, "")})
     return out
 
 
@@ -279,10 +285,11 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
 
 def ec_push_bars(names: list[str], values: list[float], axis_name: str) -> dict:
     """Horizontal diverging bars: red raises tomorrow's risk, blue lowers it (values in points)."""
-    return {**_ANIM, "grid": {"left": 8, "right": 40, "top": 10, "bottom": 30, "containLabel": True},
+    return {**_ANIM, "grid": {"left": 24, "right": 40, "top": 10, "bottom": 30, "containLabel": True},
             "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
             "xAxis": {"type": "value", "name": axis_name, "nameLocation": "middle", "nameGap": 24},
-            "yAxis": {"type": "category", "data": names, "inverse": True, "axisTick": {"show": False}},
+            "yAxis": {"type": "category", "data": names, "inverse": True, "axisTick": {"show": False},
+                      "axisLine": {"onZero": False}, "axisLabel": {"margin": 12}},
             "series": [{"type": "bar", "barWidth": "60%", "label": {"show": True, "position": "right", "formatter": "{c}"},
                         "data": [{"value": round(v, 1), "itemStyle": {"color": UP if v > 0 else DOWN, "borderRadius": 4}}
                                  for v in values]}]}

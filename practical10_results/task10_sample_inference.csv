@@ -1,2 +1,0 @@
-target_date,LSTM_probability,Random_Forest_probability,integrated_probability,integrated_prediction,AI_advisory,reason,heavy_rain_rule,wet_soil_rule,rapid_water_rise_rule,task_note
-2025-09-25,0.984480619430542,0.9975133174865436,0.9909969684585428,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False,Same-day classification using a seven-day window; not a next-day forecast. Educational use only.

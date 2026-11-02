@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from flood_ui import DOWN, FRIENDLY, GREY, LEVELS, PLACE, UP, _ANIM, _style, ec_day_bars, load_csv, load_predictions, load_summary, load_system
+from flood_ui import DOWN, FRIENDLY, GREY, LEVELS, UP, _ANIM, _style, ec_day_bars, load_csv, load_predictions, load_summary, load_system
 from fs_components import count_up_kpis
 
 system = load_system()
@@ -160,7 +160,7 @@ with limit_tab:
     cards = [
         (":material/event:", "One day ahead only", "It forecasts tomorrow. Two or three days ahead it is less sure "
                                                    "(see Accuracy), so the site does not offer that."),
-        (":material/location_on:", "One place only", f"All data comes from a single point in {PLACE} (26.25°N, 68°E). "
+        (":material/location_on:", "One place only", "All data comes from a single monitored point (26.25°N, 68°E). "
                                                      "Other places may behave differently."),
         (":material/satellite_alt:", "'Flood' means satellite water", f"A day counts as a flood when the satellite sees "
                                                                      f"≥ {system.flood_line:,.0f} km² of water, not from ground reports."),

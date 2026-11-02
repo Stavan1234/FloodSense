@@ -125,7 +125,7 @@ with dl_tab:
             cells += arrow(x + cw, top + 35, x + cw + gap - 3, top + 35, "memory" if d == 0 else "", blue)
     end_x = 20 + DAYS * (cw + gap) - gap
     svg(cells + arrow(end_x, top + 35, end_x + 50, top + 35, "", blue)
-        + box(end_x + 54, top - 15, 150, 100, purple, "P(flood", "tomorrow)", f"from {H} memory numbers"), 1090, 240)
+        + box(end_x + 54, top - 15, 150, 100, purple, "Tomorrow", "P(flood)", f"from {H} memory numbers"), 1090, 240)
     st.caption("Its 8 inputs per day: water area, change in water area, days flooded in a row, dry days in a row, "
                "rain, soil moisture and the season (two numbers for the time of year).")
 
@@ -239,7 +239,7 @@ with card_tab:
     train, val, test = summary["splits"]["train"], summary["splits"]["validation"], summary["splits"]["test"]
     card = pd.DataFrame([
         ("Task", "Next-day flood forecast: read days t−6 … t, predict whether day t+1 floods"),
-        ("Location", f"{summary['location']} · one satellite-monitored point on the Indus plain"),
+        ("Location", f"One satellite-monitored point · {summary['location']}"),
         ("Data", "Daily, 2022–2024 · days with two satellite passes merged (larger water area) · leaky column removed"),
         ("Data split (by date)", f"Train {train[0]} → {train[1]} · Validation {val[0]} → {val[1]} · Test {test[0]} → {test[1]}"),
         ("Deep learning", f"{summary['lstm_config']} · {N_IN} inputs/day · {PARAMS:,} weights · Adam, early stopping"),

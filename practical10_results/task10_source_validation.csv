@@ -1,5 +1,0 @@
-Check,Result,Detail
-Required columns present,PASS,None missing
-Duplicate dates,PASS,0
-Consecutive daily timeline,PASS,0 non-daily intervals
-Target labels are binary,PASS,"Expected 0=No Flood, 1=Flood"

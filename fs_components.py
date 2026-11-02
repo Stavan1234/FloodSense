@@ -461,7 +461,7 @@ function build(root, d) {
   const C = ["#8C9AAB", "#0B6BCB", "#7A5AF8", "#1A9E5C", d.color];
   const grid = d.grid[0].map((_, f) => d.grid.map((day, i) =>
     `<i style="--bg:${col(day[f])};transition-delay:${i * 60}ms"></i>`).join("")).join("");
-  const bars = [["LSTM", d.p_dl, d.th.dl, "#0B6BCB"], ["Forest", d.p_ml, d.th.ml, "#1A9E5C"], ["Combined", d.score, d.th.sys, d.color]]
+  const bars = [["LSTM", d.p_dl, d.th.dl, "#0B6BCB"], ["Boosting", d.p_ml, d.th.ml, "#1A9E5C"], ["Combined", d.score, d.th.sys, d.color]]
     .map(([k, v, th, c]) => `<div><span>${k}</span><b>${Math.round(v * 100)}%</b></div>` +
       `<div class="bt" style="--b:${c}"><b data-w="${v * 100}"></b><s style="left:${th * 100}%"></s></div>`).join("");
   stg.innerHTML = `
@@ -470,9 +470,9 @@ function build(root, d) {
    <div class="stage" style="--c:${C[1]}"><div class="t">2 · Deep learning</div><div class="n">LSTM reads day by day</div>
      <div class="cells">${d.grid.map(() => "<i></i>").join("")}</div><div class="mem"><b></b></div>
      <div class="small">memory builds up →</div></div>
-   <div class="stage" style="--c:${C[2]}"><div class="t">3 · Summary</div><div class="n">${d.emb.length} numbers</div>
+   <div class="stage" style="--c:${C[2]}"><div class="t">3 · LSTM memory</div><div class="n">${d.emb.length} numbers</div>
      <div class="emb">${d.emb.map((v) => `<i data-h="${8 + Math.abs(v) * 92}"></i>`).join("")}</div>
-     <div class="small">the week, compressed</div></div>
+     <div class="small">the week, compressed → its own score</div></div>
    <div class="stage" style="--c:${C[3]}"><div class="t">4 · Machine learning</div><div class="n">${d.votes.length} trees, each fixing the last</div>
      <div class="trees">${d.votes.map(() => "<i></i>").join("")}</div>
      <div class="small"><b class="vcount">0</b> steps point to a flood</div></div>

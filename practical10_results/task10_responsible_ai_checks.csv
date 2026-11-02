@@ -1,7 +1,0 @@
-Check,Status,Note
-Uses held-out test outputs,PASS,No test-based retraining or threshold selection in this practical.
-Input errors handled,PASS,Malformed sequence inputs are rejected.
-False positives and false negatives reported,PASS,FP=8; FN=13.
-Target-proxy concern documented,REVIEW,Water-area feature may be strongly related to labels; investigate with domain experts.
-Operational deployment approved,NO,Educational data only; external validation and expert review are required.
-Prediction horizon stated correctly,PASS,Same-day classification; not a next-day forecast.

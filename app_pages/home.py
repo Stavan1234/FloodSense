@@ -1,7 +1,7 @@
 import streamlit as st
 
 from flood_ui import (
-    LEVELS, LOCATION, PLACE, actual_next, advisory_props, cached_explain, cached_predict, drivers, load_data, load_summary,
+    LEVELS, LOCATION, actual_next, advisory_props, cached_explain, cached_predict, drivers, load_data, load_summary,
     load_system, load_predictions, window_ending,
 )
 from fs_components import count_up_kpis, globe, living_advisory, reason_cards
@@ -29,7 +29,7 @@ with hero:
         if st.button("Try the What-if lab", icon=":material/tune:"):
             st.switch_page("app_pages/what_if.py")
 with earth:
-    globe(LOCATION, lvl["hex"], f"{PLACE} · {LOCATION[0]:.2f}°N {LOCATION[1]:.0f}°E · {lvl['label']}",
+    globe(LOCATION, lvl["hex"], f"Monitored point · {LOCATION[0]:.2f}°N {LOCATION[1]:.0f}°E · {lvl['label']}",
           hint="drag to spin", key="globe")
 
 st.space("small")
