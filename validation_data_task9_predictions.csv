@@ -1,0 +1,205 @@
+date,Actual,LSTM probability,ML probability (RF on LSTM features),Integrated probability,Integrated prediction,AI advisory,Rule explanation,Heavy rain flag,Wet soil flag,Rapid water rise flag
+2025-03-06,No Flood,0.1257696,0.030244681403465243,0.07800714083782195,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-07,No Flood,0.005021562,0.0003575721625917542,0.0026895670155402712,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-08,No Flood,0.02068172,0.003313999175458128,0.011997859701230613,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-09,No Flood,0.00830516,0.000748961354597338,0.00452706084167159,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-10,Flood,0.9667255,0.9791223154776543,0.9729239218589291,Flood,FLOOD WARNING,Model agreement/high integrated probability; high soil moisture,False,True,False
+2025-03-11,No Flood,0.0064589507,0.0004295146086349196,0.003444232651642666,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-12,No Flood,0.0033219021,0.0003575721625917542,0.0018397371452641184,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-13,No Flood,0.01154431,0.0003575721625917542,0.005950940859537989,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-14,No Flood,0.0013911228,0.0003575721625917542,0.0008743474893611366,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-15,Flood,0.99012977,0.993852252991264,0.9919910109198415,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-03-16,Flood,0.41767547,0.5384873556688017,0.4780814105070922,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-17,No Flood,0.11302834,0.014187412498113873,0.06360787626987564,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-03-18,No Flood,0.017755399,0.0004538185533521005,0.00910460854006993,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-19,No Flood,0.01786974,0.0003575721625917542,0.009113656443577676,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-20,No Flood,0.006632738,0.0003575721625917542,0.003495154988985925,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-21,No Flood,0.1640867,0.027511965951360375,0.0957993327185696,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-22,Flood,0.9955929,0.9960364179119727,0.9958146550409626,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-03-23,No Flood,0.057070654,0.03757167757911416,0.047321165732358554,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-24,Flood,0.96244764,0.9648268660505115,0.9636372546652704,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-03-25,No Flood,0.5895458,0.6942353489652249,0.6418905676729963,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-03-26,Flood,0.9448678,0.9733418311170522,0.9591048104311914,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-03-27,Flood,0.6887127,0.8804745422041974,0.7845936291533988,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-03-28,No Flood,0.005267562,0.00045442446283388476,0.0028609931709214467,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-29,No Flood,0.3008647,0.2676107153642463,0.2842377059334659,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-03-30,Flood,0.9766534,0.9706088061159659,0.9736311015996242,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-03-31,Flood,0.9805454,0.9867413382651598,0.9836433699191705,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-04-01,No Flood,0.0068685575,0.0003575721625917542,0.003613064850714474,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-02,No Flood,0.015037133,0.0003575721625917542,0.007697352760505348,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-03,Flood,0.96699935,0.9755746169853811,0.9712869844818415,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-04-04,Flood,0.7885274,0.8117914840708006,0.800159456587326,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-04-05,No Flood,0.008606898,0.0005263669088770501,0.004566632287963706,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-06,No Flood,0.013193648,0.0004538185533521005,0.0068237334309338244,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-07,No Flood,0.0029187459,0.0004538185533521005,0.0016862822050421153,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-08,No Flood,0.010854718,0.02462755258812972,0.017741135431748968,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-09,Flood,0.6908557,0.49806479272104043,0.5944602373086251,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-04-10,Flood,0.9850396,0.9917768663577106,0.9884082290734781,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-04-11,No Flood,0.06447753,0.004111699729422314,0.03429461641572892,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-12,No Flood,0.0035069196,0.0003575721625917542,0.0019322458822619612,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-13,No Flood,0.0035136363,0.017358480866347243,0.010436058583343769,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-14,No Flood,0.0023441291,0.012272696552621755,0.007308412847020941,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-15,Flood,0.99459237,0.998105802458851,0.9963490855308019,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-04-16,Flood,0.20305713,0.26437917209088296,0.2337181486508225,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-17,No Flood,0.012716828,0.0004295146086349196,0.006573171261376843,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-18,Flood,0.1647831,0.1359119987837869,0.1503475520189801,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-19,No Flood,0.026588148,0.0097007144815884,0.01814443099385311,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-20,No Flood,0.03907063,0.014405983331726392,0.02673830595757882,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-21,No Flood,0.002340118,0.0003575721625917542,0.0013488450488415057,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-22,Flood,0.19363718,0.07006193164209658,0.13184955449511673,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-23,Flood,0.97741187,0.971386940923876,0.9743994035559627,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-04-24,No Flood,0.006146659,0.00045442446283388476,0.0033005418030514736,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-25,Flood,0.39090344,0.32808437165725757,0.3594939073776629,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-04-26,Flood,0.99668014,0.9984038560798797,0.9975419982875899,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-04-27,No Flood,0.026025977,0.0006982269023507345,0.013362101944021857,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-04-28,Flood,0.8932209,0.9162684068579139,0.9047446541735858,Flood,FLOOD WARNING,Model agreement/high integrated probability; high soil moisture,False,True,False
+2025-04-29,Flood,0.6506492,0.8218961812665746,0.7362726856078051,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-04-30,No Flood,0.082682654,0.018305141357355236,0.050493897809472145,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-01,No Flood,0.03025425,0.008253824546762635,0.019254037469540203,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-02,Flood,0.99590176,0.9983560619622326,0.9971289127007055,Flood,FLOOD WARNING,"Model agreement/high integrated probability; high soil moisture, rapid water-area increase",False,True,True
+2025-05-03,Flood,0.799636,0.7508464633836854,0.7752412348694855,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-05-04,No Flood,0.097736634,0.016154465541554596,0.056945549927807405,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-05,No Flood,0.0067061842,0.0003575721625917542,0.0035318782022562317,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-06,No Flood,0.0046504904,0.0003575721625917542,0.002504031260531812,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-07,Flood,0.12021791,0.12395681745691044,0.12208736467800013,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-05-08,No Flood,0.01926939,0.02686818009034573,0.023068785061020548,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-09,No Flood,0.041726664,0.02151247320149303,0.03161956845508993,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-10,No Flood,0.615633,0.4306901276348458,0.5231615692495518,Flood,FLOOD WATCH,Elevated model score or combined environmental trigger,False,False,False
+2025-05-11,Flood,0.99858713,0.9981776872609567,0.9983824093806004,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-05-12,Flood,0.9947857,0.9850956070998726,0.9899406665851384,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-05-13,Flood,0.99786806,0.9841885056385427,0.9910282833521082,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, rapid water-area increase",True,False,True
+2025-05-14,No Flood,0.041564234,0.02342427527665714,0.032494254438875214,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-15,No Flood,0.015346034,0.026150361549001983,0.02074819798948469,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-16,Flood,0.22243395,0.26823244410480557,0.24533319929105787,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-17,No Flood,0.17692943,0.10002623728444938,0.13847783322895946,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-18,Flood,0.7453057,0.5860084397127683,0.6656570783520964,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-05-19,No Flood,0.8035099,0.804789865869295,0.8041498784512338,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-05-20,No Flood,0.022529002,0.00045442446283388476,0.011491713370938541,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-21,No Flood,0.004440398,0.0003575721625917542,0.002398985059034496,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-22,No Flood,0.0015910108,0.0003575721625917542,0.000974291498341083,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-23,No Flood,0.002199346,0.0003575721625917542,0.0012784590646964008,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-24,Flood,0.9748745,0.9876519894554773,0.981263242957719,Flood,FLOOD WARNING,Model agreement/high integrated probability; high soil moisture,False,True,False
+2025-05-25,No Flood,0.0052425354,0.0004295146086349196,0.0028360249937094306,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-26,Flood,0.9402052,0.9558431115806274,0.9480241639942016,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-05-27,Flood,0.9928669,0.9955262944038739,0.9941965840725119,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-05-28,No Flood,0.10735812,0.051538886992708324,0.07944850368727022,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-29,No Flood,0.007699136,0.0003575721625917542,0.004028354159590274,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-30,No Flood,0.020961149,0.003766663071682663,0.01236390586801897,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-05-31,Flood,0.23846133,0.3415719364710965,0.2900166335020621,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-01,No Flood,0.008382736,0.0003575721625917542,0.004370153968256384,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-02,Flood,0.68507576,0.6123658185997767,0.648720789243736,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-03,No Flood,0.11979869,0.014648431202272157,0.06722356064145743,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-04,No Flood,0.03853597,0.009822300822626855,0.024179136008566273,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-06-05,No Flood,0.49066252,0.4418967108442477,0.4662796130038347,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-06,No Flood,0.19104253,0.2010361309517844,0.1960393292541019,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-07,No Flood,0.21361135,0.10857754014259423,0.16109444480302854,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-08,No Flood,0.4430362,0.41307583870447245,0.4280560186602501,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-09,Flood,0.99590755,0.9975306651368357,0.9967191051132787,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-06-10,Flood,0.530748,0.6200157761826657,0.5753818929321837,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-11,Flood,0.84098655,0.9373182801803457,0.8891524150173121,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-12,No Flood,0.026612023,0.003952898617295146,0.015282460754467904,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-13,No Flood,0.26583695,0.2526307624790022,0.25923385829791173,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-14,No Flood,0.26665664,0.2715693505758807,0.2691129938838266,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-15,Flood,0.997221,0.9982935307616335,0.9977572619018129,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-06-16,No Flood,0.02728508,0.002454597358597326,0.014869838880843424,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-17,Flood,0.53865343,0.4670234348741284,0.5028384340985175,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-18,Flood,0.94403213,0.9615581288915381,0.9527951307585589,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-06-19,No Flood,0.021309664,0.005629663201012266,0.013469663836974925,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-20,No Flood,0.012997317,0.0003575721625917542,0.0066774446452375945,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-21,No Flood,0.008458822,0.0005470976773634641,0.004502959855831419,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-22,No Flood,0.024069209,0.012077824423661523,0.018073516537721303,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-23,Flood,0.9974026,0.9984371254336866,0.9979198669141547,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, rapid water-area increase",True,False,True
+2025-06-24,No Flood,0.081949845,0.04144677386347586,0.06169830940993694,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-25,No Flood,0.009166681,0.0004295146086349196,0.004798097908175692,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-26,Flood,0.8111748,0.8099378138268367,0.8105563118797727,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-27,Flood,0.9897166,0.9979895134503977,0.993853051450617,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-06-28,Flood,0.99067783,0.9945893653796968,0.9926335994684128,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-06-29,No Flood,0.21847872,0.12484963293967795,0.17166417865007197,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-06-30,No Flood,0.027174382,0.0003575721625917542,0.013765976850908666,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-01,Flood,0.9976671,0.9984038560798797,0.9980354651416854,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-07-02,No Flood,0.0974565,0.024779926201144296,0.06111821306767039,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-03,No Flood,0.0045622597,0.0003575721625917542,0.002459915907156139,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-04,No Flood,0.02782932,0.001573525337513193,0.014701422288087957,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-05,No Flood,0.0722052,0.009305398204721683,0.04075529949804031,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-06,No Flood,0.017279921,0.0003575721625917542,0.008818746631067662,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-07,No Flood,0.018041281,0.0043599981386284676,0.011200639584105245,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-08,No Flood,0.10621242,0.0497047818552505,0.07795860205347593,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-09,No Flood,0.49723324,0.3154396879195568,0.40633646485802516,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-10,Flood,0.74960464,0.8275976079410144,0.7886011251661096,Flood,FLOOD WARNING,Model agreement/high integrated probability; high soil moisture,False,True,False
+2025-07-11,No Flood,0.08014555,0.0022142948658894776,0.04117992381014582,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-12,Flood,0.9430355,0.979250263153579,0.9611428732569347,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-07-13,Flood,0.59200007,0.697871955006467,0.6449360111202531,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-07-14,No Flood,0.0056702737,0.007419053997061529,0.006544663836788077,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-15,No Flood,0.006984068,0.002736939146580417,0.004860503613681654,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-16,Flood,0.99329644,0.9822847966287747,0.9877906205224104,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-07-17,No Flood,0.5659307,0.4727522047345662,0.5193414644392741,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-07-18,No Flood,0.010158374,0.000525760999395266,0.005342067486829467,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-19,No Flood,0.013440958,0.0020163185533521007,0.0077286383887945325,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-20,No Flood,0.20253004,0.08662271552441374,0.1445763784307135,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-21,Flood,0.99630934,0.9984371254336866,0.9973732327169196,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-07-22,No Flood,0.04341324,0.010846468313152365,0.02712985438784697,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-23,Flood,0.64579743,0.6513811371371055,0.6485892843030345,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-07-24,No Flood,0.05350284,0.008386105786836963,0.03094447242273729,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-25,No Flood,0.02094276,0.008519029129033878,0.014730894880237974,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-26,No Flood,0.66194427,0.5639007262807207,0.6129224982073465,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-07-27,Flood,0.7767772,0.7473996977636378,0.7620884528075238,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-07-28,No Flood,0.008607609,0.0003575721625917542,0.004482590680044561,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-29,No Flood,0.047260374,0.008725407593306075,0.027992890712050682,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-30,No Flood,0.15236442,0.1263478581897646,0.13935613805017022,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-07-31,No Flood,0.12442048,0.0659164965119014,0.09516848772595574,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-01,No Flood,0.5892505,0.6177317435360595,0.603491124253305,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-08-02,Flood,0.9861615,0.9709148697104367,0.9785381700618223,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-08-03,No Flood,0.0694884,0.025256235138414705,0.04737231693458478,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-04,No Flood,0.0034082877,0.0003575721625917542,0.0018829299072143132,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-05,No Flood,0.0108813485,0.00034051313836793974,0.005610930825717354,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-06,Flood,0.9574409,0.9863263014570323,0.9718836070902868,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-08-07,Flood,0.97436315,0.9431407856632289,0.9587519669378308,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-08-08,Flood,0.31599784,0.2694512061238379,0.29272452254891845,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-09,No Flood,0.3714386,0.46444098414511414,0.4179397884087311,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-10,Flood,0.98371625,0.9813570167746204,0.9825366331202814,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-08-11,No Flood,0.009121879,0.0014003883950426865,0.00526113369949235,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-12,Flood,0.94689006,0.93534539422569,0.9411177251794801,Flood,FLOOD WARNING,Model agreement/high integrated probability; high soil moisture,False,True,False
+2025-08-13,Flood,0.3286924,0.43507882009352256,0.3818856132547309,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-14,Flood,0.9167155,0.957120720256805,0.9369181114978788,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-08-15,Flood,0.9965283,0.9860334810296525,0.9912809042473549,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-08-16,No Flood,0.058102034,0.021922693479496543,0.04001236375592068,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-17,No Flood,0.032167986,0.008676478089643832,0.02042223206249541,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-18,No Flood,0.0011998964,0.0003575721625917542,0.000778734304976135,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-19,No Flood,0.2278982,0.16183921307598034,0.19486870423095665,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-20,No Flood,0.018608943,0.00044709767736346407,0.009528020152635132,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-21,Flood,0.99519545,0.9982587507324105,0.9967270995655003,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-08-22,Flood,0.24975792,0.21731880330767833,0.23353835952146154,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-23,No Flood,0.0040550255,0.0003575721625917542,0.0022062988421287827,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-24,Flood,0.6597518,0.7776931259509933,0.7187224494157738,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-08-25,No Flood,0.039712276,0.06274195273199817,0.0512271145208634,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-26,No Flood,0.023203652,0.0003575721625917542,0.011780612257343202,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-27,No Flood,0.38209215,0.35314302321624474,0.36761758564090585,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-28,No Flood,0.10138156,0.06779408984716308,0.08458782624868338,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-29,Flood,0.99875677,0.9984038560798797,0.9985803111995772,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-08-30,No Flood,0.067202695,0.015672677917305037,0.0414376863156872,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-08-31,No Flood,0.059294853,0.0059995220364311,0.032647187697945966,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-01,Flood,0.43690416,0.3629052634368937,0.39990471280269824,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-09-02,Flood,0.8908375,0.867750265838144,0.8792938781983841,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-03,Flood,0.99855167,0.9984038560798797,0.9984777614082412,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-09-04,Flood,0.97885656,0.9817025636051173,0.9802795635866163,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-05,No Flood,0.9647767,0.9819530119773406,0.9733648533759842,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-06,No Flood,0.58088315,0.5995466145613192,0.5902148799468279,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-07,Flood,0.69113004,0.7054998988890283,0.6983149704825695,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-08,Flood,0.99842596,0.9981288271035109,0.9982773938221412,Flood,FLOOD WARNING,Model agreement/high integrated probability; heavy rainfall,True,False,False
+2025-09-09,No Flood,0.07156078,0.052590375653354005,0.06207557668857161,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-10,Flood,0.7432505,0.8911204372356861,0.8171854632353053,Flood,FLOOD WARNING,Model agreement/high integrated probability; rapid water-area increase,False,False,True
+2025-09-11,Flood,0.4361583,0.45682211130880873,0.4464902053774573,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-12,No Flood,0.04885741,0.020610529297674627,0.034733969402355416,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-13,No Flood,0.059268992,0.005734370495751235,0.03250168144498007,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-14,Flood,0.971856,0.9845706807114082,0.978213339375327,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-15,No Flood,0.37222543,0.4791190845823283,0.42567225908517814,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-16,No Flood,0.07752514,0.047329791624345224,0.06242746523966285,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-17,No Flood,0.03547987,0.0035724679094444227,0.019526168801481055,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-18,No Flood,0.124354646,0.04103731083196956,0.08269597822091261,No Flood,MONITOR,Environmental rule triggered: high soil moisture,False,True,False
+2025-09-19,No Flood,0.44542372,0.5104392261578291,0.47793147421249,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-20,Flood,0.99795556,0.9984038560798797,0.9981797083820418,Flood,FLOOD WARNING,"Model agreement/high integrated probability; heavy rainfall, high soil moisture",True,True,False
+2025-09-21,No Flood,0.18694311,0.17962661499410798,0.18328486439898575,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-22,No Flood,0.13559428,0.0389010860803005,0.08724768232714518,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-23,No Flood,0.009897302,0.00043455445666411746,0.005165928180760638,No Flood,LOW RISK,No model or environmental rule crossed its configured trigger,False,False,False
+2025-09-24,Flood,0.6273332,0.5760517471275511,0.6016924854736418,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False
+2025-09-25,Flood,0.9844806,0.9975133174865437,0.9909969684585429,Flood,FLOOD WARNING,Model agreement/high integrated probability,False,False,False

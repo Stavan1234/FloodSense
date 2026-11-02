@@ -1,0 +1,7 @@
+Test,Expected,Actual,Result,Message
+Valid seven consecutive days,Accept input,Accepted,PASS,Seven valid rows
+Only six rows,Reject input,Rejected,PASS,Provide exactly 7 daily rows; received 6.
+Duplicate date,Reject input,Rejected,PASS,Duplicate dates found. Keep one valid observation per day or aggregate legitimate daily readings first.
+Date gap,Reject input,Rejected,PASS,Dates must be consecutive daily observations with no gaps.
+Missing required feature column,Reject input,Rejected,PASS,Missing required columns: precipitation
+Feature column has no numeric values,Reject input,Rejected,PASS,These input columns contain no usable numeric values: precipitation

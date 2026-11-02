@@ -1,0 +1,2 @@
+Test observations,Accuracy,Balanced accuracy,Flood precision,Flood recall,Flood F1-score,False positives,False negatives
+204,0.8970588235294118,0.8849206349206349,0.8904109589041096,0.8333333333333334,0.8609271523178808,8,13

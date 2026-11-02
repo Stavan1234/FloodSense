@@ -1,0 +1,57 @@
+# "Monsoon" theme for the Practical 10 flood-risk website.
+# Light and dark modes are both defined, so the appearance toggle in Settings stays available.
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+font = "'Plus Jakarta Sans':https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+baseRadius = "12px"
+buttonRadius = "10px"
+showWidgetBorder = true
+showSidebarBorder = true
+headingFontWeights = [800, 700, 700, 600, 600, 600]
+headingFontSizes = ["40px", "28px", "22px", "18px", "16px", "14px"]
+metricValueFontWeight = 700
+
+[theme.light]
+primaryColor = "#0B6BCB"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F7FC"
+textColor = "#0F2235"
+borderColor = "#DCE6F0"
+linkColor = "#0B6BCB"
+codeBackgroundColor = "#EEF3F8"
+blueColor = "#0B6BCB"
+greenColor = "#1A9E5C"
+orangeColor = "#E8820C"
+redColor = "#D93A3A"
+violetColor = "#6E56CF"
+chartCategoricalColors = ["#0B6BCB", "#E8820C", "#1A9E5C", "#D93A3A", "#6E56CF", "#14A3B8", "#8C9AAB"]
+dataframeHeaderBackgroundColor = "#F2F7FC"
+
+[theme.dark]
+primaryColor = "#4DA3FF"
+backgroundColor = "#0A1520"
+secondaryBackgroundColor = "#112233"
+textColor = "#E6EEF6"
+borderColor = "#1F3448"
+linkColor = "#7DBBFF"
+codeBackgroundColor = "#152A3E"
+blueColor = "#4DA3FF"
+greenColor = "#3DD68C"
+orangeColor = "#FFA94D"
+redColor = "#FF6B6B"
+violetColor = "#A48BFF"
+chartCategoricalColors = ["#4DA3FF", "#FFA94D", "#3DD68C", "#FF6B6B", "#A48BFF", "#3CCFE0", "#8C9AAB"]
+dataframeHeaderBackgroundColor = "#112233"
+
+[theme.light.sidebar]
+backgroundColor = "#F2F7FC"
+secondaryBackgroundColor = "#FFFFFF"
+
+[theme.dark.sidebar]
+backgroundColor = "#07111A"
+secondaryBackgroundColor = "#112233"
