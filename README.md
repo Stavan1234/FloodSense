@@ -48,8 +48,6 @@ Every push to `main` redeploys automatically. Apps with no visitors for a while 
 | Why the AI decides | Occlusion importance, LSTM vs Random Forest agreement, rule flowchart |
 | Input safety tests | Live validation tests and a "try to break it" table |
 | Responsible AI | Error trade-off, fairness, data bias, ethics, readiness |
-| How it's built | Architecture, methodology, settings |
-| Glossary & viva | Searchable terms and viva questions |
 
 ## How it works
 

@@ -52,12 +52,10 @@ pages = [
     ("app_pages/explainability.py", "Why the AI decides", ":material/psychology:", "Which inputs matter most overall, and the exact rules behind each advisory."),
     ("app_pages/safety_tests.py", "Input safety tests", ":material/shield:", "Live tests proving the system refuses broken or incomplete data."),
     ("app_pages/responsible_ai.py", "Responsible AI", ":material/balance:", "Ethics, fairness, bias, limitations, and why this is not a real warning service."),
-    ("app_pages/how_it_works.py", "How it's built", ":material/account_tree:", "Architecture diagram, methodology and how to run it yourself."),
-    ("app_pages/viva.py", "Glossary & viva", ":material/school:", "Plain-English definitions and likely viva questions with answers."),
 ]
-cols = st.columns(4)
+cols = st.columns(3)
 for i, (path, title, icon, desc) in enumerate(pages):
-    with cols[i % 4].container(border=True, height="stretch"):
+    with cols[i % 3].container(border=True, height="stretch"):
         st.page_link(path, label=title, icon=icon)
         st.caption(desc)
 
