@@ -4,7 +4,6 @@ Validation, Interpretation, Evaluation and Deployment Readiness
 PACKAGE CONTENTS
 - CIL_Practical_10_Validation_and_Deployment.ipynb : executable validation notebook
 - streamlit_app.py : website entry point (FloodSense, multi-page Streamlit app)
-- app.py : ASGI wrapper (st.App) loaded by Vercel; vercel.json holds deployment settings
 - app_pages/ : one file per website page (Check a day, What-if lab, Test results, Why the AI decides,
   Input safety tests, Responsible AI, How it's built, Glossary & viva)
 - flood_ui.py : shared loading, occlusion-based explanations and plain-language helpers

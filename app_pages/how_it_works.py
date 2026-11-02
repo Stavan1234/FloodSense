@@ -56,7 +56,7 @@ parts = [
      "Takes the LSTM's 32-number summary and lets 250 decision trees vote. A second, independent opinion."),
     (":material/rule:", "AI reasoning: rule engine", "4 IF–THEN rules + 3 environmental triggers",
      "Combines the two probabilities (50/50) and checks rainfall, soil moisture and water rise to choose a readable advisory with a reason."),
-    (":material/web:", "Deployment: this website", "Streamlit · streamlit_app.py + app_pages/ (Vercel: app.py)",
+    (":material/web:", "Deployment: this website", "Streamlit · streamlit_app.py + app_pages/",
      "Loads the exact saved artifacts once, then serves the whole pipeline through a browser. No retraining happens here."),
 ]
 cols = st.columns(3)
@@ -105,8 +105,6 @@ st.code("pip install -r requirements.txt\nstreamlit run streamlit_app.py", langu
 with st.expander("Project files", icon=":material/folder:"):
     st.table(pd.DataFrame([
         {"File": "streamlit_app.py", "Purpose": "Website entry point and navigation"},
-        {"File": "app.py", "Purpose": "ASGI wrapper that Vercel loads (st.App)"},
-        {"File": "vercel.json", "Purpose": "Vercel deployment settings"},
         {"File": "app_pages/", "Purpose": "One file per page of this website"},
         {"File": "flood_ui.py", "Purpose": "Shared loading, occlusion explanations and plain-language helpers"},
         {"File": "system_core.py", "Purpose": "Validation + integrated inference (the exact Practical 9 pipeline)"},

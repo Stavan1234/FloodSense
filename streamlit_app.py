@@ -1,6 +1,6 @@
 """Practical 10 website entry point.
 
-Run with:  streamlit run streamlit_app.py   (app.py wraps this file for Vercel)
+Run with:  streamlit run streamlit_app.py
 """
 import streamlit as st
 

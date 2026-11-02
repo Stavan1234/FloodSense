@@ -1,9 +1,10 @@
+# Exact versions tested with this app. scikit-learn matches the version the saved model was built with.
 # CPU-only PyTorch (the CUDA build is several GB and is not needed for this small LSTM)
 --extra-index-url https://download.pytorch.org/whl/cpu
-streamlit>=1.66
-altair>=5.0
-pandas>=2.0
-numpy>=1.24
-scikit-learn>=1.3
-joblib>=1.3
-torch>=2.1
+streamlit==1.66.1
+altair==6.3.0
+pandas==3.1.0
+numpy==2.5.4
+scikit-learn==1.8.0
+joblib==1.6.0
+torch==2.14.1

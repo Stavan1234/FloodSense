@@ -25,21 +25,17 @@ streamlit run streamlit_app.py
 
 Requires Python 3.10+.
 
-## Deploy on Vercel
+## Deploy free on Streamlit Community Cloud
 
-The repo is ready for Vercel's Python runtime:
+1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
+2. Click **Create app** → **Deploy a public app from GitHub**.
+3. Repository `Stavan1234/FloodSense`, branch `main`, main file path `streamlit_app.py`.
+4. Open **Advanced settings** and choose Python **3.12**.
+5. Click **Deploy**. The first build takes a few minutes (it installs PyTorch).
 
-- `app.py` exposes `app = st.App("streamlit_app.py")`, Streamlit's ASGI app, which Vercel loads as the function entrypoint. Vercel's Python functions support WebSockets, which Streamlit needs.
-- `requirements.txt` pulls **CPU-only PyTorch**, `.python-version` pins Python 3.12, and `vercel.json` sets `maxDuration` and excludes files the site doesn't need.
+Every push to `main` redeploys automatically. Apps with no visitors for a while go to sleep; the next visitor clicks "wake up" and waits about 30 seconds.
 
-Steps: import the GitHub repo in Vercel → leave the framework preset on **Other** → Deploy.
-
-If the build says the function is too large, add the environment variable `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` (Project → Settings → Environment Variables) and redeploy. PyTorch is big; Vercel's large-functions beta allows up to 5 GB.
-
-Notes:
-- On the Hobby plan a function (and so the live connection) runs for at most 5 minutes; after that the page reconnects automatically and may reset what you entered.
-- The first visit after idle time is slow (cold start loads PyTorch and the models).
-- [Streamlit Community Cloud](https://share.streamlit.io) is a simpler free alternative: point it at `streamlit_app.py`.
+`requirements.txt` pins the exact tested versions (scikit-learn 1.8.0 matches the saved model) and installs CPU-only PyTorch to keep the install small.
 
 ## What the website offers
 
@@ -73,8 +69,6 @@ Notes:
 
 ```
 streamlit_app.py           Website entry point and navigation
-app.py                     ASGI wrapper loaded by Vercel (st.App)
-vercel.json                Vercel function settings
 app_pages/                 One file per page
 flood_ui.py                Shared loaders, occlusion explanations, UI helpers
 system_core.py             Input validation + integrated inference (Practical 9 pipeline)
