@@ -1,6 +1,6 @@
 import streamlit as st
 
-from flood_ui import LEVELS, engine_trace, load_data, load_predictions, load_summary, load_system, window_ending
+from flood_ui import LEVELS, cached_trace, load_data, load_predictions, load_summary, load_system
 from fs_components import engine_walkthrough
 
 system = load_system()
@@ -49,8 +49,7 @@ case = st.segmented_control("Follow one real day through the engine", list(CASES
                             required=True, key="engine_case")
 rows = preds[CASES[case]]
 day = rows.loc[rows["Combined"].sub(rows["Combined"].median()).abs().idxmin(), "date"].date()
-win = window_ending(df, day)
-engine_walkthrough(engine_trace(system, win, system.predict_window(win)), key="engine")
+engine_walkthrough(cached_trace(str(day)), key="engine")
 
 # ---------------------------------------------------------------- engine cards
 cards = st.columns(3, gap="medium")

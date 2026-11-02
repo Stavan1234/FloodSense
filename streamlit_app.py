@@ -7,8 +7,10 @@ import streamlit as st
 st.set_page_config(page_title="FloodSense", page_icon=":material/water_drop:", layout="wide")
 
 from flood_ui import global_style  # noqa: E402  (after set_page_config)
+from fs_components import ambient_background  # noqa: E402
 
 global_style()
+ambient_background()
 
 page = st.navigation(
     [

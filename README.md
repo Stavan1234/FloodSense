@@ -47,9 +47,9 @@ Every push to `main` redeploys automatically. Apps with no visitors for a while 
 
 | Page | What you can do |
 |---|---|
-| Home | Interactive 3D globe (NASA imagery, day/night) pinned at the monitored point, the living advisory for the latest day, numbers that count up |
+| Home | Animated particle globe (drag to spin) pinned at the monitored point, the living advisory for the latest day, numbers that count up |
 | Check a day | Pick a day (or upload 7 days) → a living advisory card whose rain, clouds and water level follow the model, animated reasons, a 7-day weather strip, SHAP charts and the rule that fired |
-| What-if lab | One-click scenarios and plain-language sliders; the living advisory card turns stormy or calm as you change the weather |
+| What-if lab | Four one-tap scenarios (one per risk level) and plain-language sliders; the living advisory card turns stormy or calm as you change the weather |
 | How it works | Press Play to follow one real day through the engine: readings → LSTM → 32-number summary → 250 tree votes → rules |
 | Can I trust it? | Calendar of all 204 unseen days (click to open one), performance over time, what it looks at, safety checks, limits |
 
@@ -75,7 +75,7 @@ The website loads exactly the model trained in the notebook (`model_artifacts/`,
 streamlit_app.py           Website entry point and top navigation
 app_pages/                 home · check_day · what_if · how_it_works · trust
 flood_ui.py                Shared loaders, SHAP explanations, ECharts specs
-fs_components.py           Animated components (living advisory, week strip, engine walkthrough, globe)
+fs_components.py           Animated components (living advisory, week strip, engine walkthrough, particle globe, ambient background)
 system_core.py             The notebook's pipeline: validation, LSTM, Random Forest, rules, SHAP
 model_artifacts/           Trained LSTM + Random Forest + preprocessing (exported by the notebook)
 site_data/                 Clean dataset and evaluation results (exported by the notebook)

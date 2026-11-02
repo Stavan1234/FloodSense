@@ -93,7 +93,7 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
 function init(root) {
   const s = { root, canvas: root.querySelector(".scene"), t: 0, raf: 0, visible: true,
-    cur: { rain: 0, clouds: 0, water: 0.15, wave: 0.3, wind: 0, tint: [26, 158, 92], score: 0 },
+    cur: { rain: 0, clouds: 0, water: 0.15, wave: 0.3, wind: 0, sun: 1, radar: 0, caution: 0, dark: 0, tint: [26, 158, 92], score: 0 },
     target: null, drops: [], clouds: [] };
   s.ctx = s.canvas.getContext("2d");
   s.reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -115,10 +115,24 @@ function draw(s) {
   const sky = ctx.createLinearGradient(0, 0, 0, h);
   sky.addColorStop(0, `rgba(${r},${g},${b},${0.10 + cur.clouds * 0.16})`); sky.addColorStop(1, `rgba(${r},${g},${b},0.02)`);
   ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+  if (cur.sun > 0.02) {                             // sun with slowly turning rays
+    let sx = w * 0.86, sy = h * 0.13;              // phone layout: top-right corner
+    if (s.ringEl) { const rr = s.ringEl.getBoundingClientRect(), cr = s.canvas.getBoundingClientRect();
+      const rx = rr.left - cr.left + rr.width / 2; if (rx > w * 0.6) { sx = rx - rr.width * 1.3; sy = h * 0.22; } }
+    const sr = Math.min(26, h * 0.1);
+    const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 3.2);
+    halo.addColorStop(0, `rgba(245,179,1,${0.35 * cur.sun})`); halo.addColorStop(1, "rgba(245,179,1,0)");
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(sx, sy, sr * 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(245,179,1,${0.55 * cur.sun})`; ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.beginPath();
+    for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5 + s.t * 0.004;
+      ctx.moveTo(sx + Math.cos(a) * sr * 1.35, sy + Math.sin(a) * sr * 1.35); ctx.lineTo(sx + Math.cos(a) * sr * 1.8, sy + Math.sin(a) * sr * 1.8); }
+    ctx.stroke(); ctx.fillStyle = `rgba(245,179,1,${0.85 * cur.sun})`; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+  }
   for (const c of s.clouds) {                       // soft drifting clouds
     const cx = ((c.x + s.t * c.v * 60) % 1.3 - 0.15) * w, cy = c.y * h, rad = c.r * w;
     const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-    grd.addColorStop(0, `rgba(140,154,171,${0.30 * cur.clouds})`); grd.addColorStop(1, "rgba(140,154,171,0)");
+    const sh = Math.round(150 - 85 * cur.dark);
+    grd.addColorStop(0, `rgba(${sh},${sh + 10},${sh + 22},${(0.30 + 0.25 * cur.dark) * cur.clouds})`); grd.addColorStop(1, `rgba(${sh},${sh + 10},${sh + 22},0)`);
     ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx, cy, rad, rad * 0.45, 0, 0, Math.PI * 2); ctx.fill();
   }
   const n = Math.round(cur.rain);                   // rain, slanted by wind
@@ -128,7 +142,24 @@ function draw(s) {
     ctx.moveTo(x, y); ctx.lineTo(x - cur.wind * len, y + len);
   }
   ctx.stroke();
+  if (cur.radar > 0.02 && s.ringEl) {               // radar rings: the system is keeping watch
+    const rr = s.ringEl.getBoundingClientRect(), cr = s.canvas.getBoundingClientRect();
+    const rx = rr.left - cr.left + rr.width / 2, ry = rr.top - cr.top + rr.height / 2;
+    for (let k = 0; k < 3; k++) {
+      const p = ((s.t * 0.006) + k / 3) % 1, rad = rr.width * 0.5 + p * rr.width * 0.9;
+      ctx.strokeStyle = `rgba(11,107,203,${0.5 * (1 - p) * cur.radar})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(rx, ry, rad, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
   const level = h * (1 - cur.water);                // water surface: two moving waves
+  if (cur.caution > 0.02) {                         // amber caution band riding above the water
+    const y0 = level - 22, bh = 9; ctx.save(); ctx.beginPath(); ctx.rect(0, y0, w, bh); ctx.clip();
+    ctx.fillStyle = `rgba(232,130,12,${0.16 * cur.caution})`; ctx.fillRect(0, y0, w, bh);
+    ctx.fillStyle = `rgba(232,130,12,${0.55 * cur.caution})`;
+    for (let x = -20 + (s.t * 0.6) % 24; x < w + 20; x += 24) {
+      ctx.beginPath(); ctx.moveTo(x, y0 + bh); ctx.lineTo(x + 9, y0); ctx.lineTo(x + 17, y0); ctx.lineTo(x + 8, y0 + bh); ctx.fill(); }
+    ctx.restore();
+  }
   for (const [amp, speed, alpha, phase] of [[1, 1, 0.16, 0], [0.7, 1.6, 0.24, 2]]) {
     ctx.beginPath(); ctx.moveTo(0, h);
     for (let x = 0; x <= w; x += 6) {
@@ -144,7 +175,7 @@ function draw(s) {
 
 function step(s) {
   const tg = s.target, k = s.reduce ? 1 : 0.04;
-  for (const key of ["rain", "clouds", "water", "wave", "wind"]) s.cur[key] = lerp(s.cur[key], tg[key], k);
+  for (const key of ["rain", "clouds", "water", "wave", "wind", "sun", "radar", "caution", "dark"]) s.cur[key] = lerp(s.cur[key], tg[key], k);
   s.cur.tint = s.cur.tint.map((v, i) => lerp(v, tg.tint[i], k));
   s.cur.score = lerp(s.cur.score, tg.score, s.reduce ? 1 : 0.06);
   s.scoreEl.textContent = Math.round(s.cur.score * 100);
@@ -164,7 +195,7 @@ export default function (component) {
   let s = STATE.get(parentElement);
   if (!s) { s = init(parentElement); STATE.set(parentElement, s); }
   const root = parentElement;
-  s.scoreEl = root.querySelector(".score b"); s.arc = root.querySelector(".arc");
+  s.scoreEl = root.querySelector(".score b"); s.arc = root.querySelector(".arc"); s.ringEl = root.querySelector(".ring");
   const card = root.querySelector(".card");
   card.style.setProperty("--lvl", data.color);
   card.classList.toggle("glow", data.level >= 2 && !s.reduce);
@@ -176,10 +207,14 @@ export default function (component) {
   root.querySelector(".chips").innerHTML = data.chips.map((c) => `<span class="chip" style="--c:${c.color}">${c.text}</span>`).join("");
   root.querySelector(".ladder").innerHTML = data.ladder.map((l, i) =>
     `<div class="step ${i === data.level ? "on" : ""}" style="--c:${l.color}"><i></i>${l.label}</div>`).join("");
-  const L = data.level, rainBase = [0, 18, 80, 150][L];
-  s.target = { rain: Math.min(240, rainBase + data.rain * 70 * (L >= 1)), clouds: [0.12, 0.55, 0.8, 1][L],
+  const L = data.level, rainBase = [0, 10, 70, 150][L];
+  s.target = { rain: Math.min(240, rainBase + data.rain * 70 * (L >= 1)), clouds: [0.1, 0.65, 0.9, 1][L],
     water: 0.10 + data.score * 0.32, wave: [0.35, 0.6, 1.0, 1.6][L], wind: [0, 0.15, 0.3, 0.55][L],
+    sun: [1, 0.45, 0, 0][L], radar: [0, 1, 0, 0][L], caution: [0, 0, 1, 0][L], dark: [0, 0.15, 0.6, 0.85][L],
     tint: hex(data.color), score: data.score };
+  if (!s.started) {                                  // first paint: open in this level's weather straight away
+    s.started = true; for (const k of Object.keys(s.target)) if (k !== "score") s.cur[k] = Array.isArray(s.target[k]) ? [...s.target[k]] : s.target[k];
+  }
   if (s.reduce) { step(s); draw(s); } else loop(s);
   return () => { cancelAnimationFrame(s.raf); s.ro.disconnect(); s.io.disconnect(); STATE.delete(parentElement); };
 }
@@ -503,102 +538,161 @@ def engine_walkthrough(trace: dict, key: str | None = None):
 
 
 # =====================================================================================
-# 5 · Globe: NASA imagery, day/night for the chosen date, pulsing advisory marker
+# 5 · Particle globe (COBE, 5 kB WebGL) with a calm nature animation as fallback
 # =====================================================================================
 _GLOBE_HTML = """
-<div class="fs-globe">
-  <div class="fs-map"></div>
-  <div class="fs-badge"><i></i><span></span></div>
-  <div class="fs-note"></div>
+<div class="stage">
+  <canvas class="globe"></canvas>
+  <canvas class="nature"></canvas>
+  <div class="badge"><i></i><span></span></div>
+  <div class="hint"></div>
 </div>
 """
 _GLOBE_CSS = """
-.fs-globe { position: relative; height: 420px; border-radius: 20px; overflow: hidden;
-  background: radial-gradient(circle at 50% 45%, #0d2747 0%, #050b16 70%); }
-.fs-map { position: absolute; inset: 0; }
-.fs-badge { position: absolute; left: 14px; top: 14px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 12px;
-  border-radius: 999px; background: rgba(5, 11, 22, .72); color: #fff; font: 700 .8rem var(--st-font, sans-serif);
-  backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.12); }
-.fs-badge i { width: 10px; height: 10px; border-radius: 50%; background: var(--lvl); box-shadow: 0 0 10px var(--lvl); }
-.fs-note { position: absolute; left: 16px; top: 52px; right: 60px; z-index: 2; text-shadow: 0 1px 4px #000; color: rgba(255,255,255,.78); font: 500 .72rem var(--st-font, sans-serif); }
-.fs-pin { width: 16px; height: 16px; border-radius: 50%; background: var(--lvl); border: 2px solid #fff; position: relative; }
-.fs-pin::before, .fs-pin::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--lvl);
-  animation: fs-ping 2.2s ease-out infinite; }
-.fs-pin::after { animation-delay: 1.1s; }
-@keyframes fs-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(4.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .fs-pin::before, .fs-pin::after { animation: none; } }
+.stage { position: relative; aspect-ratio: 1 / 1; max-height: 460px; margin: 0 auto; font-family: var(--st-font, sans-serif); }
+.globe, .nature { position: absolute; inset: 0; width: 100%; height: 100%; }
+.globe { cursor: grab; opacity: 0; transition: opacity 1.2s ease; }
+.globe.ready { opacity: 1; }
+.globe:active { cursor: grabbing; }
+.nature { display: none; border-radius: 50%; }
+.stage::before { content: ""; position: absolute; inset: 12%; border-radius: 50%; filter: blur(48px); opacity: .35;
+  background: radial-gradient(circle, var(--lvl), transparent 70%); animation: breathe 6s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: scale(.92); opacity: .25; } 50% { transform: scale(1.05); opacity: .45; } }
+.badge { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: .82rem; white-space: nowrap; color: var(--st-text-color);
+  background: color-mix(in srgb, var(--st-secondary-background-color) 80%, transparent); backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--lvl) 40%, transparent); }
+.badge i { width: 9px; height: 9px; border-radius: 50%; background: var(--lvl); box-shadow: 0 0 0 0 var(--lvl); animation: ping 2s infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lvl) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.hint { position: absolute; left: 0; right: 0; top: 2%; text-align: center; font-size: .72rem; opacity: .6; color: var(--st-text-color); }
+@media (prefers-reduced-motion: reduce) { .stage::before, .badge i { animation: none; } }
 """
 _GLOBE_JS = """
-const ML = "https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js";
-const MLCSS = "https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css";
-const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+const COBE = "https://cdn.jsdelivr.net/npm/cobe@0.6.3/+esm";
 const STATE = new WeakMap();
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
 
-function loadLib() {
-  if (window.maplibregl) return Promise.resolve(window.maplibregl);
-  if (!window.__fsMaplibre) {
-    window.__fsMaplibre = new Promise((resolve, reject) => {
-      const css = document.createElement("link"); css.rel = "stylesheet"; css.href = MLCSS; document.head.appendChild(css);
-      const s = document.createElement("script"); s.src = ML; s.onload = () => resolve(window.maplibregl); s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-  return window.__fsMaplibre;
+function isDark(el) {                     // read the active Streamlit theme
+  const bg = getComputedStyle(el).getPropertyValue("--st-background-color").trim();
+  const m = bg.match(/\\d+/g); let c;
+  if (bg.startsWith("#")) c = rgb(bg.length === 4 ? "#" + [...bg.slice(1)].map((x) => x + x).join("") : bg);
+  else if (m) c = m.slice(0, 3).map((x) => x / 255);
+  return c ? 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] < 0.5 : true;
 }
 
-function nightPolygon(date) {          // day/night line from the sun's declination and hour angle
-  const rad = Math.PI / 180, doy = (date - Date.UTC(date.getUTCFullYear(), 0, 0)) / 864e5;
-  const decl = -23.44 * Math.cos(2 * Math.PI / 365 * (doy + 10));
-  const sunLon = (12 - (date.getUTCHours() + date.getUTCMinutes() / 60)) * 15;
-  const pts = [];
-  for (let lon = -180; lon <= 180; lon += 2) pts.push([lon, Math.atan(-Math.cos((lon - sunLon) * rad) / Math.tan(decl * rad)) / rad]);
-  const pole = decl > 0 ? -90 : 90;
-  return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[-180, pole], ...pts, [180, pole], [-180, pole]]] } };
+function nature(canvas, color, reduce) {  // fallback: calm rain over rolling water
+  canvas.style.display = "block";
+  const ctx = canvas.getContext("2d"); let t = 0, raf = 0;
+  const drops = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), v: 0.4 + Math.random() * 0.6 }));
+  const [r, g, b] = rgb(color).map((x) => Math.round(x * 255));
+  const draw = () => {
+    const d = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w * d) { canvas.width = w * d; canvas.height = h * d; } ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const sky = ctx.createRadialGradient(w / 2, h * 0.35, 0, w / 2, h / 2, w * 0.6);
+    sky.addColorStop(0, `rgba(${r},${g},${b},0.18)`); sky.addColorStop(1, "rgba(11,107,203,0.05)");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(77,163,255,0.45)"; ctx.lineWidth = 1.2; ctx.beginPath();
+    for (const p of drops) { const x = p.x * w, y = p.y * h * 0.65; ctx.moveTo(x, y); ctx.lineTo(x - 2, y + 9); if (!reduce) { p.y += 0.004 * p.v; if (p.y > 1) p.y = 0; } }
+    ctx.stroke();
+    for (const [k, a] of [[0, 0.22], [1, 0.32], [2, 0.42]]) {
+      ctx.beginPath(); ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 5) ctx.lineTo(x, h * (0.62 + k * 0.08) + Math.sin(x / (40 + k * 12) + t * (0.02 + k * 0.006)) * (6 - k));
+      ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = `rgba(11,107,203,${a})`; ctx.fill();
+    }
+    t += 1; if (!reduce) raf = requestAnimationFrame(draw);
+  };
+  draw();
+  return () => cancelAnimationFrame(raf);
 }
 
 export default function (component) {
   const { data, parentElement } = component;
-  const box = parentElement.querySelector(".fs-globe");
-  box.style.setProperty("--lvl", data.color);
-  parentElement.querySelector(".fs-badge span").textContent = data.badge;
-  parentElement.querySelector(".fs-note").textContent = data.note;
-  const when = new Date(data.when);
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stage = parentElement.querySelector(".stage");
+  stage.style.setProperty("--lvl", data.color);
+  parentElement.querySelector(".badge span").textContent = data.badge;
+  parentElement.querySelector(".hint").textContent = data.hint;
   let s = STATE.get(parentElement);
-  if (s) {
-    if (s.map && s.map.getSource("night")) s.map.getSource("night").setData(nightPolygon(when));
-    return () => { if (s.map) s.map.remove(); STATE.delete(parentElement); };
-  }
-  s = {}; STATE.set(parentElement, s);
-  loadLib().then((maplibregl) => {
-    const map = new maplibregl.Map({
-      container: parentElement.querySelector(".fs-map"), attributionControl: { compact: true },
-      center: [data.lon - 70, data.lat - 5], zoom: 1.1, scrollZoom: false,
-      style: { version: 8, projection: { type: "globe" },
-        sky: { "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 5, 1, 7, 0] },
-        sources: {
-          day: { type: "raster", tileSize: 256, maxzoom: 8, attribution: "Imagery: NASA GIBS Blue Marble",
-                 tiles: [GIBS + "/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg"] },
-          night: { type: "geojson", data: nightPolygon(when) } },
-        layers: [ { id: "space", type: "background", paint: { "background-color": "#050b16" } },
-                  { id: "day", type: "raster", source: "day" },
-                  { id: "night", type: "fill", source: "night", paint: { "fill-color": "#020611", "fill-opacity": 0.55 } } ] },
+  if (s) { s.color = data.color; s.shift = data.phi_shift || 0; return s.cleanup; }
+  s = { color: data.color, phi: 0, drag: null, offset: 0, shift: data.phi_shift || 0 };
+  STATE.set(parentElement, s);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const canvas = parentElement.querySelector(".globe");
+  const [lat, lon] = data.location;
+  const focus = Math.PI - ((lon * Math.PI) / 180 - Math.PI / 2);     // phi that faces the marker
+  s.phi = focus - 2.2;
+  canvas.onpointerdown = (e) => { s.drag = e.clientX - s.offset; };
+  window.addEventListener("pointerup", () => { s.drag = null; });
+  canvas.onpointermove = (e) => { if (s.drag !== null) s.offset = e.clientX - s.drag; };
+  import(COBE).then(({ default: createGlobe }) => {
+    const dark = isDark(stage);
+    const size = () => canvas.offsetWidth || parentElement.querySelector(".stage").clientWidth || 420;
+    let width = size(); const t0 = performance.now();
+    s.ro = new ResizeObserver(() => { width = size(); }); s.ro.observe(canvas);
+    s.globe = createGlobe(canvas, {
+      devicePixelRatio: 2, width: width * 2, height: width * 2, phi: s.phi, theta: 0.3,
+      dark: dark ? 1 : 0, diffuse: 1.2, mapSamples: 20000, mapBrightness: dark ? 5 : 1.4,
+      baseColor: dark ? [0.32, 0.42, 0.55] : [0.92, 0.95, 1], markerColor: rgb(data.color), glowColor: dark ? [0.15, 0.3, 0.55] : [0.82, 0.9, 1],
+      markers: [{ location: [lat, lon], size: 0.08 }],
+      onRender: (st) => {
+        const sec = (performance.now() - t0) / 1000, f = focus + s.shift;     // time-based, so it never depends on frame rate
+        const spin = reduce ? f : (sec < 2.5 ? s.phi + (f - s.phi) * (1 - Math.pow(1 - sec / 2.5, 3)) : f + Math.sin((sec - 2.5) / 4) * 0.35);
+        st.phi = spin + s.offset / 180;
+        st.width = width * 2; st.height = width * 2;
+        st.markerColor = rgb(s.color);
+        st.markers = [{ location: [lat, lon], size: reduce ? 0.08 : 0.07 + Math.abs(Math.sin(sec * 2)) * 0.04 }];
+      },
     });
-    s.map = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    const pin = document.createElement("div"); pin.className = "fs-pin";
-    new maplibregl.Marker({ element: pin }).setLngLat([data.lon, data.lat]).addTo(map);
-    map.on("load", () => {
-      if (reduce) return map.jumpTo({ center: [data.lon, data.lat], zoom: 3.6 });
-      map.easeTo({ center: [data.lon - 20, data.lat], zoom: 1.6, duration: 2600, easing: (t) => t });
-      setTimeout(() => map.flyTo({ center: [data.lon, data.lat], zoom: 3.6, speed: 0.55, curve: 1.6 }), 2700);
-    });
-  }).catch(() => { parentElement.querySelector(".fs-note").textContent = "The map couldn't load (no internet?)."; });
-  return () => { if (s.map) s.map.remove(); STATE.delete(parentElement); };
+    requestAnimationFrame(() => canvas.classList.add("ready"));
+  }).catch((err) => { console.warn("FloodSense globe fell back to the nature scene:", err);
+    s.stopNature = nature(parentElement.querySelector(".nature"), data.color, reduce); });
+  s.cleanup = () => { if (s.globe) s.globe.destroy(); if (s.ro) s.ro.disconnect(); if (s.stopNature) s.stopNature(); STATE.delete(parentElement); };
+  return s.cleanup;
 }
 """
-_GLOBE = st.components.v2.component("fs_globe", html=_GLOBE_HTML, css=_GLOBE_CSS, js=_GLOBE_JS, isolate_styles=False)
+_GLOBE = st.components.v2.component("fs_particle_globe", html=_GLOBE_HTML, css=_GLOBE_CSS, js=_GLOBE_JS)
 
 
-def globe(lat: float, lon: float, color: str, badge: str, when_iso: str, note: str, key: str | None = None):
-    _GLOBE(key=key, data={"lat": lat, "lon": lon, "color": color, "badge": badge, "when": when_iso, "note": note})
+def globe(location: tuple[float, float], color: str, badge: str, hint: str = "", phi_shift: float = 0.0, key: str | None = None):
+    _GLOBE(key=key, data={"location": list(location), "color": color, "badge": badge, "hint": hint, "phi_shift": phi_shift})
+
+
+# =====================================================================================
+# 6 · Ambient background: a soft glow that follows the mouse, two slowly drifting blobs
+# =====================================================================================
+_BG_HTML = """
+<span id="fs-bg-anchor"></span>
+"""
+_BG_CSS = """
+[data-testid="stElementContainer"]:has(#fs-bg-anchor) { display: none; }
+[data-testid="stAppViewContainer"] { position: relative; z-index: 1; background: transparent; }
+#fs-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 30%), rgba(77, 163, 255, .13), transparent 65%); }
+#fs-bg::before, #fs-bg::after { content: ""; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(70px); opacity: .10; }
+#fs-bg::before { background: #1A9E5C; top: -25vmax; right: -20vmax; animation: fs-drift 26s ease-in-out infinite alternate; }
+#fs-bg::after { background: #7A5AF8; bottom: -30vmax; left: -20vmax; animation: fs-drift 32s ease-in-out infinite alternate-reverse; }
+@keyframes fs-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(6vmax, 4vmax) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { #fs-bg::before, #fs-bg::after { animation: none; } }
+"""
+_BG_JS = """
+export default function () {
+  const app = document.querySelector('[data-testid="stApp"]');
+  if (!app || document.getElementById("fs-bg")) return;
+  const bg = document.createElement("div"); bg.id = "fs-bg"; app.prepend(bg);
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let tx = 0.5, ty = 0.3, x = 0.5, y = 0.3, raf = 0;
+  const tick = () => {
+    x += (tx - x) * 0.07; y += (ty - y) * 0.07;
+    bg.style.setProperty("--mx", (x * 100).toFixed(2) + "%"); bg.style.setProperty("--my", (y * 100).toFixed(2) + "%");
+    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.001 ? requestAnimationFrame(tick) : 0;   // stop when the mouse rests
+  };
+  window.addEventListener("pointermove", (e) => {
+    tx = e.clientX / window.innerWidth; ty = e.clientY / window.innerHeight; if (!raf) raf = requestAnimationFrame(tick);
+  }, { passive: true });
+}
+"""
+_BG = st.components.v2.component("fs_ambient_bg", html=_BG_HTML, css=_BG_CSS, js=_BG_JS, isolate_styles=False)
+
+
+def ambient_background():
+    _BG(key="fs_ambient_bg")

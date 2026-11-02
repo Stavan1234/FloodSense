@@ -1,9 +1,7 @@
-from datetime import datetime, timezone
-
 import streamlit as st
 
 from flood_ui import (
-    LEVELS, LOCATION, actual_label, advisory_props, cached_explain, drivers, load_data, load_summary,
+    LEVELS, LOCATION, actual_label, advisory_props, cached_explain, cached_predict, drivers, load_data, load_summary,
     load_system, window_ending,
 )
 from fs_components import count_up_kpis, globe, living_advisory, reason_cards
@@ -15,7 +13,7 @@ c, m = summary["confusion"], summary["metrics"]
 
 latest = df["date"].iloc[-1].date()
 window = window_ending(df, latest)
-result = system.predict_window(window)
+result = cached_predict(str(latest))
 feats, _ = cached_explain(str(latest))
 lvl = LEVELS[result["advisory"]]
 
@@ -30,11 +28,8 @@ with hero:
         if st.button("Try the What-if lab", icon=":material/tune:"):
             st.switch_page("app_pages/what_if.py")
 with earth:
-    now = datetime.now(timezone.utc)
-    when = datetime(latest.year, latest.month, latest.day, now.hour, now.minute, tzinfo=timezone.utc)
-    globe(*LOCATION, color=lvl["hex"], badge=f"{lvl['label']} · {latest:%d %b %Y}",
-          when_iso=when.isoformat(), note=f"Monitored point {LOCATION[0]:.0f}°N {LOCATION[1]:.0f}°E · "
-          f"daylight shown for {latest:%d %b}, {when:%H:%M} UTC", key="globe")
+    globe(LOCATION, lvl["hex"], f"{lvl['label']} · {latest:%d %b %Y} · {LOCATION[0]:.0f}°N {LOCATION[1]:.0f}°E",
+          hint="drag to spin", key="globe")
 
 st.space("small")
 card, reasons = st.columns([2.2, 1], gap="large")

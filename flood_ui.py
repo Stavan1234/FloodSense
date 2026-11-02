@@ -139,7 +139,12 @@ def shap_tables(system: IntegratedFloodSystem, window: pd.DataFrame):
     return feats, days
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=512)
+def cached_predict(day_key: str) -> dict:
+    return load_system().predict_window(window_ending(load_data(), day_key))
+
+
+@st.cache_data(show_spinner=False, max_entries=512)
 def cached_explain(day_key: str) -> tuple:
     df = load_data()
     return shap_tables(load_system(), window_ending(df, day_key))
@@ -234,6 +239,12 @@ def week_days(window: pd.DataFrame, df: pd.DataFrame) -> list[dict]:
                 for f in ["precipitation", "soil_moisture", "water_area_km2", "water_area_change", "temperature", "humidity"]],
         })
     return days
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def cached_trace(day_key: str) -> dict:
+    window = window_ending(load_data(), day_key)
+    return engine_trace(load_system(), window, cached_predict(day_key))
 
 
 def engine_trace(system: IntegratedFloodSystem, window: pd.DataFrame, result: dict) -> dict:

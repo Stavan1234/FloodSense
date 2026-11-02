@@ -50,6 +50,7 @@ class IntegratedFloodSystem:
         self.hidden_size = int(ckpt["hidden"])
 
         self.rf = bundle["rf"]
+        self.rf.n_jobs = 1   # one window at a time: worker pools only add overhead
         self.imputer, self.scaler = bundle["imputer"], bundle["scaler"]
         self.env_features = list(bundle["env_features"])
         self.feature_names = list(bundle["features"])
@@ -95,7 +96,7 @@ class IntegratedFloodSystem:
 
     def scale(self, w: pd.DataFrame) -> np.ndarray:
         """Validated window → model input of shape (days, features)."""
-        d = w["date"].dt.dayofyear
+        d = w["date"].dt.day_of_year
         frame = w[self.env_features].copy()
         frame["day_of_year_sin"] = np.sin(2 * np.pi * d / 365.25)
         frame["day_of_year_cos"] = np.cos(2 * np.pi * d / 365.25)
@@ -134,6 +135,20 @@ class IntegratedFloodSystem:
                 "score": f["score"], "prediction": "Flood" if f["score"] >= self.thresholds["sys"] else "No Flood",
                 "advisory": advisory, "rule": rule_id, "rule_text": rule_text,
                 "triggers": [t for t in TRIGGERS if f[t]], "facts": f}
+
+    def predict_windows(self, windows: list) -> list[dict]:
+        """Several windows in one model call (much faster than one at a time)."""
+        ws = [self.validate_window(w) for w in windows]
+        p_dl, p_ml, _ = self.score(np.stack([self.scale(w) for w in ws]))
+        out = []
+        for w, dl, ml in zip(ws, p_dl, p_ml):
+            f = self.facts(w.iloc[-1], float(dl), float(ml))
+            advisory, rule_id, rule_text = self.forward_chain(f)
+            out.append({"date": w["date"].iloc[-1].date(), "p_dl": float(dl), "p_ml": float(ml), "score": f["score"],
+                        "prediction": "Flood" if f["score"] >= self.thresholds["sys"] else "No Flood",
+                        "advisory": advisory, "rule": rule_id, "rule_text": rule_text,
+                        "triggers": [t for t in TRIGGERS if f[t]], "facts": f})
+        return out
 
     # ------------------------------------------------------------------ explanation
     def explain(self, window, n_samples: int = 400, seed: int = 0) -> np.ndarray:

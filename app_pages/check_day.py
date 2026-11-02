@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from flood_ui import (
-    FRIENDLY, SAMPLE_CSV_PATH, actual_label, advisory_props, cached_explain, decision_steps, drivers,
+    FRIENDLY, SAMPLE_CSV_PATH, actual_label, advisory_props, cached_explain, cached_predict, decision_steps, drivers,
     ec_day_bars, ec_push_bars, ec_trends, load_data, load_predictions, load_system, model_scores,
     shap_tables, test_period, week_days, window_ending, LEVELS,
 )
@@ -20,9 +20,11 @@ if "day" in st.query_params:  # deep link, e.g. ?day=2025-05-07
 st.session_state.setdefault("day", test_end)
 st.session_state.setdefault("source", "Dataset")
 
-EXAMPLES = {
-    "Caught flood": (preds["Actual"] == "Flood") & (preds["Prediction"] == "Flood"),
-    "Calm day": (preds["Actual"] == "No Flood") & (preds["Advisory"] == "LOW RISK"),
+EXAMPLES = {  # one tap shows each risk level, plus the two kinds of mistake
+    "Low risk": preds["Advisory"] == "LOW RISK",
+    "Monitor": preds["Advisory"] == "MONITOR",
+    "Flood watch": preds["Advisory"] == "FLOOD WATCH",
+    "Flood warning": preds["Advisory"] == "FLOOD WARNING",
     "Missed flood": (preds["Actual"] == "Flood") & (preds["Prediction"] == "No Flood"),
     "False alarm": (preds["Actual"] == "No Flood") & (preds["Prediction"] == "Flood"),
 }
@@ -49,7 +51,7 @@ with left:
         window, actual = None, None
         if source == "Dataset":
             day = st.date_input("Day to check", min_value=first_day, max_value=last_day, key="day", format="DD/MM/YYYY")
-            st.pills("Try an example", list(EXAMPLES), key="example", on_change=use_example)
+            st.pills("Jump to an example", list(EXAMPLES), key="example", on_change=use_example)
             if test_start <= day <= test_end:
                 st.badge("Unseen test day", color="green", icon=":material/verified:")
             else:
@@ -70,7 +72,7 @@ with right:
         st.info("Upload a CSV with 7 consecutive days to see the risk.", icon=":material/upload_file:")
         st.stop()
     try:
-        result = system.predict_window(window)
+        result = cached_predict(str(day)) if source == "Dataset" else system.predict_window(window)
     except Exception as exc:
         st.error(str(exc), title="This data can't be used", icon=":material/block:")
         st.caption("FloodSense refuses incomplete or inconsistent data instead of guessing.")
